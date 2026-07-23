@@ -1,0 +1,25 @@
+{
+  "baseSeed": 20260714,
+  "sameClassPairProbability": 0.15,
+  "videoPathPrefix": "data",
+  "changeProbabilities": {
+    "oneObjectReplacement": 0.25,
+    "twoObjectsReplacement": 0.18,
+    "colorChange": 0.17,
+    "distanceIncrease": 0.15,
+    "swapPositions": 0.12,
+    "noChange": 0.13
+  },
+  "colors": [
+    { "name": "red", "hex": "#D94A4A" },
+    { "name": "blue", "hex": "#3F73D8" },
+    { "name": "green", "hex": "#4C9A55" },
+    { "name": "yellow", "hex": "#E1B93F" },
+    { "name": "orange", "hex": "#D97B35" },
+    { "name": "purple", "hex": "#8B63C7" },
+    { "name": "pink", "hex": "#D97FA5" },
+    { "name": "cyan", "hex": "#43A7B5" },
+    { "name": "white", "hex": "#D9D9D2" },
+    { "name": "gray", "hex": "#777D83" }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+    "version": "unity-assetbundle-v2-full-rebuild",
+    "props": [
+        {
+            "name": "Apple",
+            "displayName": "Apple",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/apple.prefab"
+        },
+        {
+            "name": "Banana",
+            "displayName": "Banana",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/banana.prefab"
+        },
+        {
+            "name": "Camera",
+            "displayName": "Camera",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/camera.prefab"
+        },
+        {
+            "name": "CartoonPersion",
+            "displayName": "CartoonPersion",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/cartoonpersion.prefab"
+        },
+        {
+            "name": "ChewingGumBottle",
+            "displayName": "ChewingGumBottle",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/chewinggumbottle.prefab"
+        },
+        {
+            "name": "dragon",
+            "displayName": "dragon",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/dragon.prefab"
+        },
+        {
+            "name": "Flowerpot",
+            "displayName": "Flowerpot",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/flowerpot.prefab"
+        },
+        {
+            "name": "Glasses",
+            "displayName": "Glasses",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/glasses.prefab"
+        },
+        {
+            "name": "Handbag",
+            "displayName": "Handbag",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/handbag.prefab"
+        },
+        {
+            "name": "HigwinCup",
+            "displayName": "HigwinCup",
+            "bundleFile": "modelpack_0000.bundle",
+            "assetName": "assets/modelpacks/generated/higwincup.prefab"
+        },
+        {
+            "name": "keyboard",
+            "displayName": "keyboard",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/keyboard.prefab"
+        },
+        {
+            "name": "LandlineTelephone",
+            "displayName": "LandlineTelephone",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/landlinetelephone.prefab"
+        },
+        {
+            "name": "mouse",
+            "displayName": "mouse",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/mouse.prefab"
+        },
+        {
+            "name": "Notebook",
+            "displayName": "Notebook",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/notebook.prefab"
+        },
+        {
+            "name": "Orange",
+            "displayName": "Orange",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/orange.prefab"
+        },
+        {
+            "name": "Ornament",
+            "displayName": "Ornament",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/ornament.prefab"
+        },
+        {
+            "name": "Pistol",
+            "displayName": "Pistol",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/pistol.prefab"
+        },
+        {
+            "name": "Rockery",
+            "displayName": "Rockery",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/rockery.prefab"
+        },
+        {
+            "name": "RubiksCube",
+            "displayName": "RubiksCube",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/rubikscube.prefab"
+        },
+        {
+            "name": "starbuacks",
+            "displayName": "starbuacks",
+            "bundleFile": "modelpack_0001.bundle",
+            "assetName": "assets/modelpacks/generated/starbuacks.prefab"
+        },
+        {
+            "name": "StuffedBear",
+            "displayName": "StuffedBear",
+            "bundleFile": "modelpack_0002.bundle",
+            "assetName": "assets/modelpacks/generated/stuffedbear.prefab"
+        },
+        {
+            "name": "ToyCar",
+            "displayName": "ToyCar",
+            "bundleFile": "modelpack_0002.bundle",
+            "assetName": "assets/modelpacks/generated/toycar.prefab"
+        },
+        {
+            "name": "VenusFlytrap",
+            "displayName": "VenusFlytrap",
+            "bundleFile": "modelpack_0002.bundle",
+            "assetName": "assets/modelpacks/generated/venusflytrap.prefab"
+        },
+        {
+            "name": "WalkieTalkie",
+            "displayName": "WalkieTalkie",
+            "bundleFile": "modelpack_0002.bundle",
+            "assetName": "assets/modelpacks/generated/walkietalkie.prefab"
+        }
+    ]
+}

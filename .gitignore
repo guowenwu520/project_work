@@ -1,0 +1,154 @@
+# ============================================================
+# ChangeBlindnessRoom - Unity project
+# Commit source code/configuration only.
+# Do not commit external models, builds, generated datasets, or caches.
+# ============================================================
+
+# -------------------------
+# Unity generated folders
+# -------------------------
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Unity/Bee build cache
+/[Bb]ee/
+/Artifacts/
+/il2cppOutput/
+
+# Unity local job/config folders used by this project
+/.unity_config/
+/.unity_cache/
+/.unity3d/
+
+# -------------------------
+# IDE/editor generated files
+# -------------------------
+.vs/
+.idea/
+.vscode/
+
+*.csproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.opendb
+*.VC.db
+*.mdb
+*.pdb
+
+# VS Code may keep shared recommendations if explicitly forced later.
+# !.vscode/extensions.json
+# !.vscode/settings.json
+
+# -------------------------
+# Compiled Unity Players
+# -------------------------
+/Build/
+/Builds/
+/build/
+/builds/
+
+# Native/compiler outputs
+/bin/
+/obj/
+*.exe
+*.app
+*.x86
+*.x86_64
+*.so
+*.dll
+
+# Keep DLLs that are actual Unity plugin source assets, when needed.
+!/[Aa]ssets/**/Plugins/**/*.dll
+
+# -------------------------
+# External model bundle
+# -------------------------
+# Do not upload FBX/OBJ/GLB/textures in ModelBundles.
+/ModelBundles/*
+
+# Lightweight manifest/instructions may still be committed.
+!/ModelBundles/prop_manifest.json
+!/ModelBundles/README.md
+!/ModelBundles/.gitkeep
+
+# Optional alternative external model locations.
+/ExternalModels/
+/ModelsExternal/
+/DownloadedModels/
+
+# -------------------------
+# Generated dataset outputs
+# -------------------------
+/Output/
+/Outputs/
+/DatasetOutput/
+/Captures/
+/RenderedVideos/
+
+# Generated frame/video folders outside Output, if any.
+**/frames/frame_*.png
+**/frames/frame_*.jpg
+**/data/video_*.mp4
+
+# QA regeneration backups
+**/qa_backup_before_regenerate_*/
+
+# Temporary media encoding files
+*.part.mp4
+*.tmp.mp4
+*.ffmpeg.tmp
+ffmpeg-*.log
+
+# -------------------------
+# Runtime/log/crash files
+# -------------------------
+*.log
+crash.dmp
+sysinfo.txt
+mono_crash.*
+Player.log
+
+# PID/lock files
+*.pid
+*.lock
+
+# -------------------------
+# Operating-system files
+# -------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -------------------------
+# Archives and local backups
+# -------------------------
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+
+backup_*/
+*_backup/
+*_backup_*/
+backup_before_*/

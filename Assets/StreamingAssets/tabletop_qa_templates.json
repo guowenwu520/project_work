@@ -1,0 +1,3273 @@
+{
+  "schema_version": "3.1",
+  "scene_type": "tabletop",
+  "questions_per_scene": 8,
+  "selection_rule": "For each generated scene, combine the scene seed with sampling_salt, shuffle the matching 60-template pool, skip templates with unavailable placeholders, and select 8 unique valid QA pairs.",
+  "answer_policy": "Templates 1-40 are descriptive. Templates 41-60 are closed-ended and answer exactly Yes. or No.",
+  "final_record_format": {
+    "video_id": "scene_000123",
+    "video_path": "videos/scene_000123.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "A rendered question with all placeholders filled.",
+        "answer": "A rendered answer with all placeholders filled."
+      }
+    ]
+  },
+  "change_types": [
+    {
+      "change_type": "one_object_replacement",
+      "name_cn": "单物体替换",
+      "description": "一个物体被另一个物体替换，通常保持原来的桌面位置不变。",
+      "templates": [
+        {
+          "template_id": "one_object_replacement_01",
+          "question": "What changed during the video?",
+          "answer": "The {old_object} was replaced by the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_02",
+          "question": "Which object was replaced?",
+          "answer": "The {old_object} was replaced.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_03",
+          "question": "Which object appeared after the camera returned?",
+          "answer": "The {new_object} appeared.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_04",
+          "question": "What took the place of the {old_object}?",
+          "answer": "The {new_object} took its place.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_05",
+          "question": "Which object disappeared from the final scene?",
+          "answer": "The {old_object} disappeared from the final scene.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_06",
+          "question": "Which object is new in the final scene?",
+          "answer": "The {new_object} is new in the final scene.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_07",
+          "question": "What was at {original_position} before the change?",
+          "answer": "The {old_object} was at {original_position}.",
+          "required_variables": [
+            "old_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_08",
+          "question": "What was at {original_position} after the change?",
+          "answer": "The {new_object} was at {original_position}.",
+          "required_variables": [
+            "new_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_09",
+          "question": "Describe the replacement that occurred.",
+          "answer": "The {old_object} was replaced by the {new_object} at {original_position}.",
+          "required_variables": [
+            "new_object",
+            "old_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_10",
+          "question": "How did the object at {original_position} change?",
+          "answer": "It changed from the {old_object} to the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_11",
+          "question": "What happened to the {old_object}?",
+          "answer": "It was removed and replaced by the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_12",
+          "question": "Which object now occupies the original position of the {old_object}?",
+          "answer": "The {new_object} now occupies that position.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_13",
+          "question": "Which object was present only at the beginning?",
+          "answer": "The {old_object} was present only at the beginning.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_14",
+          "question": "Which object was present only at the end?",
+          "answer": "The {new_object} was present only at the end.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_15",
+          "question": "What is the main difference between the first and last views?",
+          "answer": "The {old_object} in the first view became the {new_object} in the last view.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_16",
+          "question": "How many objects were on the table at the beginning?",
+          "answer": "There were {initial_count} objects on the table.",
+          "required_variables": [
+            "initial_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_17",
+          "question": "How many objects were on the table at the end?",
+          "answer": "There were {final_count} objects on the table.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_18",
+          "question": "How did the total number of objects change?",
+          "answer": "The total remained {final_count} because one object replaced another.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_19",
+          "question": "Is the {new_object} in the same position as the replaced {old_object}?",
+          "answer": "Yes. The {new_object} occupies the same position that the {old_object} occupied before the replacement.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_20",
+          "question": "What property of the scene remained unchanged after the replacement?",
+          "answer": "The position remained unchanged: the {old_object} before the replacement and the {new_object} afterward occupied the same location.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_21",
+          "question": "Name the original object and its replacement.",
+          "answer": "The original object was the {old_object}, and the replacement was the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_22",
+          "question": "What single-object difference can be seen at the end?",
+          "answer": "The {new_object} is present instead of the {old_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_23",
+          "question": "Which object would need to be restored to recreate the beginning?",
+          "answer": "The {old_object} would need to replace the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_24",
+          "question": "Which object would need to be removed to restore the original scene?",
+          "answer": "The {new_object} would need to be removed.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_25",
+          "question": "Which object would need to be added back to restore the original scene?",
+          "answer": "The {old_object} would need to be added back.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_26",
+          "question": "How are the {old_object} and the {new_object} related in the change?",
+          "answer": "The {new_object} directly replaced the {old_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_27",
+          "question": "Which item changed identity while keeping the same position?",
+          "answer": "The item at {original_position} changed from the {old_object} to the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_28",
+          "question": "Apart from one object being replaced, did anything else change?",
+          "answer": "No. Apart from the replacement, the other object remained unchanged.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_29",
+          "question": "At least how many replacements occurred?",
+          "answer": "At least one object replacement occurred.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_30",
+          "question": "What is the most noticeable change in the final scene?",
+          "answer": "The {new_object} appears where the {old_object} used to be.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_31",
+          "question": "Which pair of objects distinguishes the first frame from the last frame?",
+          "answer": "The differing pair is the {old_object} and the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_32",
+          "question": "What object is now {relative_position} the {reference_object}?",
+          "answer": "The {new_object} is now {relative_position} the {reference_object}.",
+          "required_variables": [
+            "new_object",
+            "reference_object",
+            "relative_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_33",
+          "question": "What object was originally {relative_position} the {reference_object}?",
+          "answer": "The {old_object} was originally {relative_position} the {reference_object}.",
+          "required_variables": [
+            "old_object",
+            "reference_object",
+            "relative_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_34",
+          "question": "Did the arrangement change, or only the object identity?",
+          "answer": "The arrangement stayed the same, but the object identity changed.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_35",
+          "question": "Describe the final state of the changed location.",
+          "answer": "The {new_object} is at {original_position}, replacing the {old_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_36",
+          "question": "What object should a viewer look for to confirm the change?",
+          "answer": "The viewer should look for the {new_object} at {original_position}.",
+          "required_variables": [
+            "new_object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_37",
+          "question": "What object is no longer visible near the {reference_object}?",
+          "answer": "The {old_object} is no longer visible near the {reference_object}.",
+          "required_variables": [
+            "old_object",
+            "reference_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_38",
+          "question": "What object is visible near the {reference_object} at the end?",
+          "answer": "The {new_object} is visible near the {reference_object}.",
+          "required_variables": [
+            "new_object",
+            "reference_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_39",
+          "question": "Summarize the final scene relative to the initial scene.",
+          "answer": "The scene is unchanged except that the {new_object} replaces the {old_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_40",
+          "question": "What replacement is evident after the camera returns?",
+          "answer": "The {old_object} has been replaced by the {new_object}.",
+          "required_variables": [
+            "new_object",
+            "old_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "one_object_replacement_41",
+          "question": "Was the {old_object} replaced during the video?",
+          "answer": "Yes.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_42",
+          "question": "Did the {new_object} appear after the camera returned?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_43",
+          "question": "Did the item at {original_position} change identity?",
+          "answer": "Yes.",
+          "required_variables": [
+            "original_position"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_44",
+          "question": "Is the {new_object} at {original_position} in the final scene?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object",
+            "original_position"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_45",
+          "question": "Was exactly one object replaced?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_46",
+          "question": "Did the total number of objects remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_47",
+          "question": "Did the replacement occupy the original location of the {old_object}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_48",
+          "question": "Was the {old_object} present only in the initial scene?",
+          "answer": "Yes.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_49",
+          "question": "Was the {new_object} present only in the final scene?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_50",
+          "question": "Did the {reference_object} remain unchanged?",
+          "answer": "Yes.",
+          "required_variables": [
+            "reference_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_51",
+          "question": "Is the {old_object} still present in the final scene?",
+          "answer": "No.",
+          "required_variables": [
+            "old_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_52",
+          "question": "Was the {new_object} already present in the initial scene?",
+          "answer": "No.",
+          "required_variables": [
+            "new_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_53",
+          "question": "Were two objects replaced?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_54",
+          "question": "Did the total number of objects increase?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_55",
+          "question": "Did the total number of objects decrease?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_56",
+          "question": "Did the changed object only change color?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_57",
+          "question": "Did the two objects swap positions?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_58",
+          "question": "Did the replacement move to the opposite side of the table?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_59",
+          "question": "Did the entire tabletop scene remain unchanged?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "one_object_replacement_60",
+          "question": "Was the {reference_object} replaced?",
+          "answer": "No.",
+          "required_variables": [
+            "reference_object"
+          ],
+          "answer_style": "yes_no"
+        }
+      ]
+    },
+    {
+      "change_type": "two_objects_replacement",
+      "name_cn": "双物体替换",
+      "description": "两个物体分别被两个新物体替换，通常保持各自原来的桌面位置。",
+      "templates": [
+        {
+          "template_id": "two_objects_replacement_01",
+          "question": "What changed during the video?",
+          "answer": "The {old_object_1} was replaced by the {new_object_1}, and the {old_object_2} was replaced by the {new_object_2}.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2",
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_02",
+          "question": "How many objects were replaced?",
+          "answer": "Two objects were replaced.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_03",
+          "question": "Which two original objects were replaced?",
+          "answer": "The {old_object_1} and the {old_object_2} were replaced.",
+          "required_variables": [
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_04",
+          "question": "Which two new objects appeared?",
+          "answer": "The {new_object_1} and the {new_object_2} appeared.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_05",
+          "question": "What replaced the {old_object_1}?",
+          "answer": "The {new_object_1} replaced the {old_object_1}.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_06",
+          "question": "What replaced the {old_object_2}?",
+          "answer": "The {new_object_2} replaced the {old_object_2}.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_07",
+          "question": "Which object disappeared from {position_1}?",
+          "answer": "The {old_object_1} disappeared from {position_1}.",
+          "required_variables": [
+            "old_object_1",
+            "position_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_08",
+          "question": "Which object disappeared from {position_2}?",
+          "answer": "The {old_object_2} disappeared from {position_2}.",
+          "required_variables": [
+            "old_object_2",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_09",
+          "question": "Which object is now at {position_1}?",
+          "answer": "The {new_object_1} is now at {position_1}.",
+          "required_variables": [
+            "new_object_1",
+            "position_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_10",
+          "question": "Which object is now at {position_2}?",
+          "answer": "The {new_object_2} is now at {position_2}.",
+          "required_variables": [
+            "new_object_2",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_11",
+          "question": "Describe both replacements.",
+          "answer": "The {old_object_1} became the {new_object_1}, while the {old_object_2} became the {new_object_2}.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2",
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_12",
+          "question": "What was at {position_1} before the changes?",
+          "answer": "The {old_object_1} was at {position_1}.",
+          "required_variables": [
+            "old_object_1",
+            "position_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_13",
+          "question": "What was at {position_2} before the changes?",
+          "answer": "The {old_object_2} was at {position_2}.",
+          "required_variables": [
+            "old_object_2",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_14",
+          "question": "What replacement occurred at {position_1}?",
+          "answer": "At {position_1}, the {new_object_1} replaced the {old_object_1}.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1",
+            "position_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_15",
+          "question": "What replacement occurred at {position_2}?",
+          "answer": "At {position_2}, the {new_object_2} replaced the {old_object_2}.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_16",
+          "question": "Which objects were present only at the beginning?",
+          "answer": "The {old_object_1} and the {old_object_2} were present only at the beginning.",
+          "required_variables": [
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_17",
+          "question": "Which objects were present only at the end?",
+          "answer": "The {new_object_1} and the {new_object_2} were present only at the end.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_18",
+          "question": "How many objects were on the table at the beginning?",
+          "answer": "There were {initial_count} objects on the table.",
+          "required_variables": [
+            "initial_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_19",
+          "question": "How many objects were on the table at the end?",
+          "answer": "There were {final_count} objects on the table.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_20",
+          "question": "How did the total object count change?",
+          "answer": "The total remained {final_count} because two objects were replaced by two others.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_21",
+          "question": "Which objects occupied {position_1} before and after the replacements?",
+          "answer": "The {old_object_1} occupied {position_1} before the replacements, and the {new_object_1} occupied it afterward.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1",
+            "position_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_22",
+          "question": "Which objects occupied {position_2} before and after the replacements?",
+          "answer": "The {old_object_2} occupied {position_2} before the replacements, and the {new_object_2} occupied it afterward.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_23",
+          "question": "What are the two main differences between the first and last views?",
+          "answer": "The {new_object_1} replaces the {old_object_1}, and the {new_object_2} replaces the {old_object_2}.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2",
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_24",
+          "question": "Which objects would need to be restored to recreate the beginning?",
+          "answer": "The {old_object_1} and the {old_object_2} would need to be restored.",
+          "required_variables": [
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_25",
+          "question": "Which objects would need to be removed to restore the original scene?",
+          "answer": "The {new_object_1} and the {new_object_2} would need to be removed.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_26",
+          "question": "What should replace the {new_object_1} to restore the first view?",
+          "answer": "The {old_object_1} should replace it.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_27",
+          "question": "What should replace the {new_object_2} to restore the first view?",
+          "answer": "The {old_object_2} should replace it.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_28",
+          "question": "Did the two changed locations remain the same?",
+          "answer": "Both replacements stayed at {position_1} and {position_2}.",
+          "required_variables": [
+            "position_1",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_29",
+          "question": "What changed at {position_1} and {position_2}?",
+          "answer": "The {old_object_1} became the {new_object_1} at {position_1}, and the {old_object_2} became the {new_object_2} at {position_2}.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2",
+            "old_object_1",
+            "old_object_2",
+            "position_1",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_30",
+          "question": "Apart from the two replacements, did anything else change?",
+          "answer": "No. Apart from the two replacements, everything else remained unchanged.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_31",
+          "question": "What final objects mark the two changed locations?",
+          "answer": "The {new_object_1} and the {new_object_2} mark the changed locations.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_32",
+          "question": "Which original objects are missing near the end?",
+          "answer": "The {old_object_1} and the {old_object_2} are missing.",
+          "required_variables": [
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_33",
+          "question": "Which new objects are visible near the end?",
+          "answer": "The {new_object_1} and the {new_object_2} are visible.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_34",
+          "question": "How can the two replacements be confirmed?",
+          "answer": "Compare {position_1} and {position_2}: the original objects have been replaced by the two new objects.",
+          "required_variables": [
+            "position_1",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_35",
+          "question": "What happened to the item at {position_1}?",
+          "answer": "The {old_object_1} was replaced by the {new_object_1}.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1",
+            "position_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_36",
+          "question": "What happened to the item at {position_2}?",
+          "answer": "The {old_object_2} was replaced by the {new_object_2}.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2",
+            "position_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_37",
+          "question": "Which final object corresponds to the original {old_object_1}?",
+          "answer": "The corresponding final object is the {new_object_1}.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_38",
+          "question": "Which final object corresponds to the original {old_object_2}?",
+          "answer": "The corresponding final object is the {new_object_2}.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_39",
+          "question": "Summarize the final scene relative to the initial scene.",
+          "answer": "The scene is unchanged except for the two replacements: {old_object_1} to {new_object_1}, and {old_object_2} to {new_object_2}.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2",
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_40",
+          "question": "What double replacement is visible after the camera returns?",
+          "answer": "The {old_object_1} and {old_object_2} have been replaced by the {new_object_1} and {new_object_2}.",
+          "required_variables": [
+            "new_object_1",
+            "new_object_2",
+            "old_object_1",
+            "old_object_2"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "two_objects_replacement_41",
+          "question": "Were two objects replaced during the video?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_42",
+          "question": "Was the {old_object_1} replaced by the {new_object_1}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object_1",
+            "old_object_1"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_43",
+          "question": "Was the {old_object_2} replaced by the {new_object_2}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object_2",
+            "old_object_2"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_44",
+          "question": "Did the {new_object_1} appear at {position_1}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object_1",
+            "position_1"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_45",
+          "question": "Did the {new_object_2} appear at {position_2}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_object_2",
+            "position_2"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_46",
+          "question": "Did both original objects disappear from the final scene?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_47",
+          "question": "Did two new objects appear in the final scene?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_48",
+          "question": "Did the total object count remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_49",
+          "question": "Did both replacement objects stay at the original changed locations?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_50",
+          "question": "Apart from the two replacements, did the object count and the two occupied positions remain unchanged?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_51",
+          "question": "Is the {old_object_1} still present at the end?",
+          "answer": "No.",
+          "required_variables": [
+            "old_object_1"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_52",
+          "question": "Is the {old_object_2} still present at the end?",
+          "answer": "No.",
+          "required_variables": [
+            "old_object_2"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_53",
+          "question": "Was only one object replaced?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_54",
+          "question": "Did the total number of objects increase?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_55",
+          "question": "Did the total number of objects decrease?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_56",
+          "question": "Did the two original objects merely change color?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_57",
+          "question": "Did the two original objects swap positions with each other?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_58",
+          "question": "Was the {new_object_1} present at the beginning?",
+          "answer": "No.",
+          "required_variables": [
+            "new_object_1"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_59",
+          "question": "Was the {new_object_2} present at the beginning?",
+          "answer": "No.",
+          "required_variables": [
+            "new_object_2"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "two_objects_replacement_60",
+          "question": "Did the entire tabletop scene remain unchanged?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        }
+      ]
+    },
+    {
+      "change_type": "same_object_color_change",
+      "name_cn": "颜色变化",
+      "description": "同一个物体保持身份和位置不变，但颜色发生变化。",
+      "templates": [
+        {
+          "template_id": "same_object_color_change_01",
+          "question": "What changed during the video?",
+          "answer": "The {object} changed from {original_color} to {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_02",
+          "question": "Which object changed color?",
+          "answer": "The {object} changed color.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_03",
+          "question": "What was the original color of the {object}?",
+          "answer": "It was {original_color}.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_04",
+          "question": "What color is the {object} at the end?",
+          "answer": "It is {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_05",
+          "question": "How did the appearance of the {object} change?",
+          "answer": "Its color changed from {original_color} to {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_06",
+          "question": "What color change occurred?",
+          "answer": "The {object} changed from {original_color} to {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_07",
+          "question": "Which object changed to {new_color} in the final scene?",
+          "answer": "The {object} changed to {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_08",
+          "question": "Which object changed from {original_color}?",
+          "answer": "The {object} changed from {original_color}.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_09",
+          "question": "What happened to the {original_color} {object}?",
+          "answer": "It became {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_10",
+          "question": "Describe the final appearance of the changed object.",
+          "answer": "The {object} is {new_color} at the end.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_11",
+          "question": "Did the {object} itself change, or did only its color change?",
+          "answer": "The {object} itself remained unchanged; only its color changed.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_12",
+          "question": "Did the {object} remain in the same location?",
+          "answer": "The {object} remained at {original_position}.",
+          "required_variables": [
+            "object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_13",
+          "question": "What stayed unchanged about the {object}?",
+          "answer": "Its identity and position stayed unchanged.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_14",
+          "question": "Where was the color-changing object located?",
+          "answer": "The {object} was at {original_position}.",
+          "required_variables": [
+            "object",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_15",
+          "question": "Which item changed visually without being replaced?",
+          "answer": "The {object} changed visually without being replaced.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_16",
+          "question": "What is the main visual difference between the first and last views?",
+          "answer": "The {object} is {original_color} at first and {new_color} at the end.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_17",
+          "question": "How many objects changed color?",
+          "answer": "One object changed color.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_18",
+          "question": "Were any objects added or removed?",
+          "answer": "No objects were added or removed; only the {object}'s color changed.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_19",
+          "question": "How many objects were present at the beginning?",
+          "answer": "There were {initial_count} objects.",
+          "required_variables": [
+            "initial_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_20",
+          "question": "How many objects were present at the end?",
+          "answer": "There were {final_count} objects.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_21",
+          "question": "How did the object count change?",
+          "answer": "The object count remained {final_count}.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_22",
+          "question": "Which color is no longer visible on the {object}?",
+          "answer": "The {original_color} color is no longer visible on it.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_23",
+          "question": "Which color appears on the {object} after the camera returns?",
+          "answer": "The {new_color} color appears on it.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_24",
+          "question": "What object should a viewer inspect to notice the change?",
+          "answer": "The viewer should inspect the {object}.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_25",
+          "question": "What feature of the {object} changed?",
+          "answer": "Its color changed.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_26",
+          "question": "What feature of the {object} stayed the same?",
+          "answer": "Its shape, identity, and position stayed the same.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_27",
+          "question": "Which object is {relative_position} the {reference_object} and changed color?",
+          "answer": "The {object} is {relative_position} the {reference_object}.",
+          "required_variables": [
+            "object",
+            "reference_object",
+            "relative_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_28",
+          "question": "What color was the object {relative_position} the {reference_object} at first?",
+          "answer": "It was {original_color}.",
+          "required_variables": [
+            "original_color",
+            "reference_object",
+            "relative_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_29",
+          "question": "What color was the {object} after the change?",
+          "answer": "The {object} was {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_30",
+          "question": "How can the initial and final appearances be distinguished?",
+          "answer": "The {object} changes from {original_color} in the first view to {new_color} in the last view.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_31",
+          "question": "What would need to change to restore the first view?",
+          "answer": "The {object} would need to return to {original_color}.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_32",
+          "question": "What color should the {object} be to match the beginning?",
+          "answer": "It should be {original_color}.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_33",
+          "question": "What color should the {object} be to match the final view?",
+          "answer": "It should be {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_34",
+          "question": "Did another object take the place of the {object}?",
+          "answer": "The same {object} remained; its color alone changed.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_35",
+          "question": "What happened at {original_position}?",
+          "answer": "The {object} stayed there but changed from {original_color} to {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color",
+            "original_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_36",
+          "question": "Which final object differs only in color from its initial state?",
+          "answer": "The {object} differs only in color.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_37",
+          "question": "Did the tabletop arrangement change?",
+          "answer": "The arrangement stayed the same; only the {object}'s color changed.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_38",
+          "question": "Summarize the color transition.",
+          "answer": "The {object} transitioned from {original_color} to {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_39",
+          "question": "What was the final color of the {object}, which was originally {original_color}?",
+          "answer": "Its final color was {new_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_40",
+          "question": "Describe the final scene relative to the initial scene.",
+          "answer": "Everything is unchanged except that the {object} is now {new_color} instead of {original_color}.",
+          "required_variables": [
+            "new_color",
+            "object",
+            "original_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_41",
+          "question": "Did the {object} change color?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_42",
+          "question": "Was the {object} {original_color} at the beginning?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_43",
+          "question": "Was the {object} {new_color} at the end?",
+          "answer": "Yes.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_44",
+          "question": "Did the same {object} remain in the scene?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_45",
+          "question": "Did the {object} stay at {original_position}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object",
+            "original_position"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_46",
+          "question": "Did the total object count remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_47",
+          "question": "Was only the color of the {object} changed?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_48",
+          "question": "Were all objects retained on the table?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_49",
+          "question": "Did the tabletop arrangement remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_50",
+          "question": "Did the {reference_object} remain unchanged?",
+          "answer": "Yes.",
+          "required_variables": [
+            "reference_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_51",
+          "question": "Did the {object} become a different kind of object?",
+          "answer": "No.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_52",
+          "question": "Was the {object} removed from the table?",
+          "answer": "No.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_53",
+          "question": "Did the {object} move to another location?",
+          "answer": "No.",
+          "required_variables": [
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_54",
+          "question": "Was the {object} still {original_color} at the end?",
+          "answer": "No.",
+          "required_variables": [
+            "object",
+            "original_color"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_55",
+          "question": "Was the {object} already {new_color} at the beginning?",
+          "answer": "No.",
+          "required_variables": [
+            "new_color",
+            "object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_56",
+          "question": "Did the total number of objects change?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_57",
+          "question": "Did any pair of objects swap positions?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_58",
+          "question": "Did the objects move farther apart?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_59",
+          "question": "Did the first and final views look completely identical?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "same_object_color_change_60",
+          "question": "Did the {reference_object} change color?",
+          "answer": "No.",
+          "required_variables": [
+            "reference_object"
+          ],
+          "answer_style": "yes_no"
+        }
+      ]
+    },
+    {
+      "change_type": "distance_increase",
+      "name_cn": "距离增大",
+      "description": "两个桌面物体同时向外移动，使它们之间的距离增大。",
+      "templates": [
+        {
+          "template_id": "distance_increase_01",
+          "question": "What changed during the video?",
+          "answer": "The distance between the {object_a} and the {object_b} increased.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_02",
+          "question": "Which two objects moved farther apart?",
+          "answer": "The {object_a} and the {object_b} moved farther apart.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_03",
+          "question": "How did the relationship between the {object_a} and the {object_b} change?",
+          "answer": "They became farther apart.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_04",
+          "question": "Were the {object_a} and the {object_b} closer at the beginning or at the end?",
+          "answer": "They were closer at the beginning.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_05",
+          "question": "What was the final spatial relationship between the {object_a} and the {object_b}?",
+          "answer": "They were farther apart at the end.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_06",
+          "question": "What was the initial spatial relationship between the {object_a} and the {object_b}?",
+          "answer": "They were closer together.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_07",
+          "question": "What was the spatial relationship between the {object_a} and the {object_b} after the change?",
+          "answer": "The {object_a} and the {object_b} were farther apart.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_08",
+          "question": "Which objects moved during the change?",
+          "answer": "Both the {object_a} and the {object_b} moved.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_09",
+          "question": "Did either of the two changed objects stay fixed?",
+          "answer": "Neither object stayed fixed; both moved outward.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_10",
+          "question": "Where was the {object_a} before the change?",
+          "answer": "It was at {initial_position_a}.",
+          "required_variables": [
+            "initial_position_a",
+            "object_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_11",
+          "question": "Where was the {object_a} after the change?",
+          "answer": "It was at {final_position_a}.",
+          "required_variables": [
+            "final_position_a",
+            "object_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_12",
+          "question": "Where was the {object_b} before the change?",
+          "answer": "It was at {initial_position_b}.",
+          "required_variables": [
+            "initial_position_b",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_13",
+          "question": "Where was the {object_b} after the change?",
+          "answer": "It was at {final_position_b}.",
+          "required_variables": [
+            "final_position_b",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_14",
+          "question": "How did the {object_a}'s position change?",
+          "answer": "It moved from {initial_position_a} to {final_position_a}.",
+          "required_variables": [
+            "final_position_a",
+            "initial_position_a",
+            "object_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_15",
+          "question": "How did the {object_b}'s position change?",
+          "answer": "It moved from {initial_position_b} to {final_position_b}.",
+          "required_variables": [
+            "final_position_b",
+            "initial_position_b",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_16",
+          "question": "What movement caused the distance to increase?",
+          "answer": "The two objects moved away from each other.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_17",
+          "question": "Did either object disappear?",
+          "answer": "Both objects remained visible; only their spacing changed.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_18",
+          "question": "Were any objects replaced?",
+          "answer": "The same two objects remained; only their positions changed.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_19",
+          "question": "How many objects were involved in the spacing change?",
+          "answer": "Two objects were involved.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_20",
+          "question": "How many objects were present at the beginning?",
+          "answer": "There were {initial_count} objects.",
+          "required_variables": [
+            "initial_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_21",
+          "question": "How many objects were present at the end?",
+          "answer": "There were {final_count} objects.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_22",
+          "question": "How did the object count change?",
+          "answer": "The object count remained {final_count}.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_23",
+          "question": "What is the main difference between the first and last views?",
+          "answer": "The {object_a} and the {object_b} are farther apart in the last view.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_24",
+          "question": "Which pair should be compared to notice the change?",
+          "answer": "The {object_a} and the {object_b} should be compared.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_25",
+          "question": "What happened to the gap between the {object_a} and the {object_b}?",
+          "answer": "The gap became larger.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_26",
+          "question": "Was the gap larger before or after the camera returned?",
+          "answer": "The gap was larger after the camera returned.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_27",
+          "question": "Did the two objects move closer together or farther apart?",
+          "answer": "They moved farther apart.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_28",
+          "question": "What remained unchanged despite the movement?",
+          "answer": "The identities, colors, and shapes of both objects remained unchanged.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_29",
+          "question": "What changed about the tabletop layout?",
+          "answer": "The spacing between the {object_a} and the {object_b} increased.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_30",
+          "question": "How did the {object_a} move relative to the {object_b}?",
+          "answer": "The {object_a} moved farther to the left of the {object_b}.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_31",
+          "question": "How did the {object_b} move relative to the {object_a}?",
+          "answer": "The {object_b} moved farther to the right of the {object_a}.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_32",
+          "question": "What would need to happen to restore the original spacing?",
+          "answer": "Both objects would need to move back toward each other.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_33",
+          "question": "What would restore the pair's initial relationship?",
+          "answer": "Reducing the gap between the two objects would restore it.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_34",
+          "question": "What is the final placement of the {object_a} relative to the {object_b}?",
+          "answer": "The {object_a} is farther to the left of the {object_b}.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_35",
+          "question": "What is the final placement of the {object_b} relative to the {object_a}?",
+          "answer": "The {object_b} is farther to the right of the {object_a}.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_36",
+          "question": "What spatial property changed without changing the objects themselves?",
+          "answer": "The distance between the two objects changed.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_37",
+          "question": "Were any other objects involved in the change?",
+          "answer": "No other objects were involved.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_38",
+          "question": "Did the two objects exchange places?",
+          "answer": "They did not exchange places; they moved farther apart.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_39",
+          "question": "Summarize the movement.",
+          "answer": "The {object_a} moved leftward and the {object_b} moved rightward, increasing the distance between them.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_40",
+          "question": "Describe the final scene relative to the initial scene.",
+          "answer": "The same two objects remain on the table, but they are farther apart.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "distance_increase_41",
+          "question": "Did the distance between the {object_a} and the {object_b} increase?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_42",
+          "question": "Did the {object_a} and the {object_b} move farther apart?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_43",
+          "question": "Did both changed objects move?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_44",
+          "question": "Did both objects remain visible after the change?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_45",
+          "question": "Did the identities of both objects remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_46",
+          "question": "Did the total object count remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_47",
+          "question": "Did the {object_a} move farther toward the left side?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_a"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_48",
+          "question": "Did the {object_b} move farther toward the right side?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_49",
+          "question": "Was the final gap larger than the initial gap?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_50",
+          "question": "Was spacing the main property that changed?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_51",
+          "question": "Did the two objects move closer together?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_52",
+          "question": "Did the {object_a} and the {object_b} swap positions?",
+          "answer": "No.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_53",
+          "question": "Was either object replaced?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_54",
+          "question": "Was either object removed?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_55",
+          "question": "Did either object change color?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_56",
+          "question": "Did the total number of objects change?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_57",
+          "question": "Did one of the two changed objects remain fixed?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_58",
+          "question": "Did the tabletop scene remain unchanged?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_59",
+          "question": "Was the final gap smaller than the initial gap?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "distance_increase_60",
+          "question": "Did the {object_a} end up to the right of the {object_b}?",
+          "answer": "No.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "yes_no"
+        }
+      ]
+    },
+    {
+      "change_type": "swap_positions",
+      "name_cn": "位置交换",
+      "description": "两个物体交换彼此的原始位置，物体身份和数量不变。",
+      "templates": [
+        {
+          "template_id": "swap_positions_01",
+          "question": "What changed during the video?",
+          "answer": "The {object_a} and the {object_b} swapped positions.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_02",
+          "question": "Which two objects exchanged places?",
+          "answer": "The {object_a} and the {object_b} exchanged places.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_03",
+          "question": "Where was the {object_a} at the beginning?",
+          "answer": "The {object_a} was at {position_a}.",
+          "required_variables": [
+            "object_a",
+            "position_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_04",
+          "question": "Where was the {object_a} at the end?",
+          "answer": "The {object_a} was at {position_b}.",
+          "required_variables": [
+            "object_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_05",
+          "question": "Where was the {object_b} at the beginning?",
+          "answer": "The {object_b} was at {position_b}.",
+          "required_variables": [
+            "object_b",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_06",
+          "question": "Where was the {object_b} at the end?",
+          "answer": "The {object_b} was at {position_a}.",
+          "required_variables": [
+            "object_b",
+            "position_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_07",
+          "question": "What object moved to {position_a}?",
+          "answer": "The {object_b} moved to {position_a}.",
+          "required_variables": [
+            "object_b",
+            "position_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_08",
+          "question": "What object moved to {position_b}?",
+          "answer": "The {object_a} moved to {position_b}.",
+          "required_variables": [
+            "object_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_09",
+          "question": "Which object took the original place of the {object_a}?",
+          "answer": "The {object_b} took its original place.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_10",
+          "question": "Which object took the original place of the {object_b}?",
+          "answer": "The {object_a} took its original place.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_11",
+          "question": "Describe the position exchange.",
+          "answer": "The {object_a} moved to {position_b}, and the {object_b} moved to {position_a}.",
+          "required_variables": [
+            "object_a",
+            "object_b",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_12",
+          "question": "Did either object disappear?",
+          "answer": "Both objects remained visible and exchanged positions.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_13",
+          "question": "Were any objects replaced?",
+          "answer": "No objects were replaced; the two objects swapped positions.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_14",
+          "question": "How many objects were involved in the swap?",
+          "answer": "Two objects were involved.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_15",
+          "question": "How many objects were present at the beginning?",
+          "answer": "There were {initial_count} objects.",
+          "required_variables": [
+            "initial_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_16",
+          "question": "How many objects were present at the end?",
+          "answer": "There were {final_count} objects.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_17",
+          "question": "How did the object count change?",
+          "answer": "The object count remained {final_count}.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_18",
+          "question": "What is the main difference between the first and last views?",
+          "answer": "The {object_a} and the {object_b} are in each other's original positions.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_19",
+          "question": "Which object is now at {position_a}?",
+          "answer": "The {object_b} is now at {position_a}.",
+          "required_variables": [
+            "object_b",
+            "position_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_20",
+          "question": "Which object is now at {position_b}?",
+          "answer": "The {object_a} is now at {position_b}.",
+          "required_variables": [
+            "object_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_21",
+          "question": "Which object was originally at {position_a}?",
+          "answer": "The {object_a} was originally at {position_a}.",
+          "required_variables": [
+            "object_a",
+            "position_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_22",
+          "question": "Which object was originally at {position_b}?",
+          "answer": "The {object_b} was originally at {position_b}.",
+          "required_variables": [
+            "object_b",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_23",
+          "question": "How can the swap be confirmed?",
+          "answer": "Each object appears in the other's original position.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_24",
+          "question": "Which object moved from {position_a} to {position_b}?",
+          "answer": "The {object_a} moved from {position_a} to {position_b}.",
+          "required_variables": [
+            "object_a",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_25",
+          "question": "Which object moved from {position_b} to {position_a}?",
+          "answer": "The {object_b} moved from {position_b} to {position_a}.",
+          "required_variables": [
+            "object_b",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_26",
+          "question": "What happened to the {object_a}'s location?",
+          "answer": "It changed from {position_a} to {position_b}.",
+          "required_variables": [
+            "object_a",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_27",
+          "question": "What happened to the {object_b}'s location?",
+          "answer": "It changed from {position_b} to {position_a}.",
+          "required_variables": [
+            "object_b",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_28",
+          "question": "What stayed unchanged during the swap?",
+          "answer": "The object identities, colors, and total count stayed unchanged.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_29",
+          "question": "Did the two objects move independently or exchange locations?",
+          "answer": "They exchanged locations.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_30",
+          "question": "Which pair should be compared to notice the change?",
+          "answer": "The {object_a} and the {object_b} should be compared.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_31",
+          "question": "What would need to happen to restore the first view?",
+          "answer": "The {object_a} and the {object_b} would need to swap back.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_32",
+          "question": "Where should the {object_a} move to restore the original arrangement?",
+          "answer": "It should return to {position_a}.",
+          "required_variables": [
+            "object_a",
+            "position_a"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_33",
+          "question": "Where should the {object_b} move to restore the original arrangement?",
+          "answer": "It should return to {position_b}.",
+          "required_variables": [
+            "object_b",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_34",
+          "question": "Which object ended at the {object_a}'s starting location?",
+          "answer": "The {object_b} ended there.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_35",
+          "question": "Which object ended at the {object_b}'s starting location?",
+          "answer": "The {object_a} ended there.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_36",
+          "question": "Did the distance between the two objects change after they swapped positions?",
+          "answer": "No. The distance remained unchanged; the main change was that the two objects swapped positions.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_37",
+          "question": "What spatial relationship changed?",
+          "answer": "The two objects reversed their locations.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_38",
+          "question": "Apart from the position swap, did anything else change?",
+          "answer": "No. Apart from the position swap, nothing else changed.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_39",
+          "question": "Summarize the final arrangement.",
+          "answer": "The {object_a} is at {position_b}, and the {object_b} is at {position_a}.",
+          "required_variables": [
+            "object_a",
+            "object_b",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_40",
+          "question": "Describe the final scene relative to the initial scene.",
+          "answer": "Everything is unchanged except that the {object_a} and the {object_b} have swapped positions.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "swap_positions_41",
+          "question": "Did the {object_a} and the {object_b} swap positions?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_a",
+            "object_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_42",
+          "question": "Did both objects remain visible after the swap?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_43",
+          "question": "Did the total number of objects remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_44",
+          "question": "Did the {object_a} move from {position_a} to {position_b}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_a",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_45",
+          "question": "Did the {object_b} move from {position_b} to {position_a}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "object_b",
+            "position_a",
+            "position_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_46",
+          "question": "Did each object occupy the other's original position?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_47",
+          "question": "Did both objects move during the change?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_48",
+          "question": "Did the tabletop arrangement change?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_49",
+          "question": "Were the two original positions reversed?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_50",
+          "question": "Did the identities of both objects remain unchanged?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_51",
+          "question": "Was either object replaced?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_52",
+          "question": "Was either object removed?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_53",
+          "question": "Did either object change color?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_54",
+          "question": "Did the total number of objects change?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_55",
+          "question": "Did the {object_a} remain at {position_a}?",
+          "answer": "No.",
+          "required_variables": [
+            "object_a",
+            "position_a"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_56",
+          "question": "Did the {object_b} remain at {position_b}?",
+          "answer": "No.",
+          "required_variables": [
+            "object_b",
+            "position_b"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_57",
+          "question": "Did only one of the two objects move?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_58",
+          "question": "Did a new object appear?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_59",
+          "question": "Did the entire tabletop scene remain unchanged?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "swap_positions_60",
+          "question": "Was increasing the distance between the objects the main change?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        }
+      ]
+    },
+    {
+      "change_type": "no_change",
+      "name_cn": "不变化",
+      "description": "摄像机离开并返回后，桌面物体、颜色、位置和数量均保持不变。",
+      "templates": [
+        {
+          "template_id": "no_change_01",
+          "question": "What changed during the video?",
+          "answer": "Nothing changed.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_02",
+          "question": "Describe the final scene relative to the initial scene.",
+          "answer": "The final scene matches the initial scene.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_03",
+          "question": "Were any objects added or removed?",
+          "answer": "All objects remained present.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_04",
+          "question": "Were any objects replaced?",
+          "answer": "No object was replaced.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_05",
+          "question": "Was there any color change in the scene?",
+          "answer": "Every object kept its original color.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_06",
+          "question": "Did any object move?",
+          "answer": "Every object stayed in its original position.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_07",
+          "question": "How many objects were present at the beginning?",
+          "answer": "There were {initial_count} objects.",
+          "required_variables": [
+            "initial_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_08",
+          "question": "How many objects were present at the end?",
+          "answer": "There were {final_count} objects.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_09",
+          "question": "How did the object count change?",
+          "answer": "The object count remained {final_count}.",
+          "required_variables": [
+            "final_count"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_10",
+          "question": "Which objects remained on the table?",
+          "answer": "{final_object_list} remained on the table.",
+          "required_variables": [
+            "final_object_list"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_11",
+          "question": "What was at {selected_position} at the beginning?",
+          "answer": "The {selected_object} was at {selected_position}.",
+          "required_variables": [
+            "selected_object",
+            "selected_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_12",
+          "question": "What was at {selected_position} at the end?",
+          "answer": "The {selected_object} was still at {selected_position}.",
+          "required_variables": [
+            "selected_object",
+            "selected_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_13",
+          "question": "Where was the {selected_object} at the beginning?",
+          "answer": "It was at {selected_position}.",
+          "required_variables": [
+            "selected_object",
+            "selected_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_14",
+          "question": "Where was the {selected_object} at the end?",
+          "answer": "It remained at {selected_position}.",
+          "required_variables": [
+            "selected_object",
+            "selected_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_15",
+          "question": "What color was the {selected_object} at the beginning?",
+          "answer": "It was {selected_color}.",
+          "required_variables": [
+            "selected_color",
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_16",
+          "question": "What color was the {selected_object} at the end?",
+          "answer": "It remained {selected_color}.",
+          "required_variables": [
+            "selected_color",
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_17",
+          "question": "What happened to the {selected_object}?",
+          "answer": "It remained unchanged.",
+          "required_variables": [
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_18",
+          "question": "Which object was {relative_position} the {reference_object} at the beginning?",
+          "answer": "The {selected_object} was {relative_position} the {reference_object}.",
+          "required_variables": [
+            "reference_object",
+            "relative_position",
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_19",
+          "question": "Which object was {relative_position} the {reference_object} at the end?",
+          "answer": "The {selected_object} remained {relative_position} the {reference_object}.",
+          "required_variables": [
+            "reference_object",
+            "relative_position",
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_20",
+          "question": "Did the arrangement stay consistent?",
+          "answer": "The tabletop arrangement stayed consistent.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_21",
+          "question": "What is the main difference between the first and last views?",
+          "answer": "There is no visible difference.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_22",
+          "question": "How can the final frame be described?",
+          "answer": "It shows the same objects in the same positions as the first frame.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_23",
+          "question": "Which item disappeared?",
+          "answer": "No item disappeared.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_24",
+          "question": "Which new item appeared?",
+          "answer": "No new item appeared.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_25",
+          "question": "Which object changed its identity?",
+          "answer": "No object changed its identity.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_26",
+          "question": "Which object changed its position?",
+          "answer": "No object changed its position.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_27",
+          "question": "Which object changed its appearance?",
+          "answer": "No object changed its appearance.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_28",
+          "question": "Did the spacing between objects change?",
+          "answer": "The spacing between the objects remained the same.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_29",
+          "question": "Was there any position swap between the objects?",
+          "answer": "No pair of objects swapped positions.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_30",
+          "question": "Was the {selected_object} still visible at the end?",
+          "answer": "The {selected_object} remained visible.",
+          "required_variables": [
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_31",
+          "question": "What remained unchanged about the scene?",
+          "answer": "The objects, colors, positions, and count all remained unchanged.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_32",
+          "question": "How many replacements occurred?",
+          "answer": "No replacements occurred.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_33",
+          "question": "How many color changes occurred?",
+          "answer": "No color changes occurred.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_34",
+          "question": "How many position swaps occurred?",
+          "answer": "No position swaps occurred.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_35",
+          "question": "How many objects moved farther apart?",
+          "answer": "No objects moved farther apart.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_36",
+          "question": "What should a viewer conclude after comparing the first and last frames?",
+          "answer": "The scene did not change.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_37",
+          "question": "Did the final tabletop state match the initial state after the camera returned?",
+          "answer": "Yes. The final tabletop state matched the initial state.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_38",
+          "question": "What is the final position of the {selected_object}?",
+          "answer": "Its final position is {selected_position}, the same as before.",
+          "required_variables": [
+            "selected_object",
+            "selected_position"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_39",
+          "question": "What is the final color of the {selected_object}?",
+          "answer": "Its final color is {selected_color}, the same as before.",
+          "required_variables": [
+            "selected_color",
+            "selected_object"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_40",
+          "question": "Summarize the video outcome.",
+          "answer": "The camera returned to an unchanged tabletop scene.",
+          "required_variables": [],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "no_change_41",
+          "question": "Did the final scene match the initial scene?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_42",
+          "question": "Did all objects remain on the table?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_43",
+          "question": "Did the total object count remain the same?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_44",
+          "question": "Did every object stay in its original position?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_45",
+          "question": "Did every object keep its original identity?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_46",
+          "question": "Did the {selected_object} remain visible at the end?",
+          "answer": "Yes.",
+          "required_variables": [
+            "selected_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_47",
+          "question": "Did the {selected_object} remain at {selected_position}?",
+          "answer": "Yes.",
+          "required_variables": [
+            "selected_object",
+            "selected_position"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_48",
+          "question": "Did the tabletop arrangement remain unchanged?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_49",
+          "question": "Were the initial and final views visually consistent?",
+          "answer": "Yes.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_50",
+          "question": "Did the {reference_object} remain unchanged?",
+          "answer": "Yes.",
+          "required_variables": [
+            "reference_object"
+          ],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_51",
+          "question": "Did anything change during the video?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_52",
+          "question": "Was any object replaced?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_53",
+          "question": "Was any object removed?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_54",
+          "question": "Was any new object added?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_55",
+          "question": "Was any object's color different in the final scene?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_56",
+          "question": "Did any object move to another position?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_57",
+          "question": "Did any two objects exchange their original locations?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_58",
+          "question": "Did the distance between the objects increase?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_59",
+          "question": "Did the total number of objects change?",
+          "answer": "No.",
+          "required_variables": [],
+          "answer_style": "yes_no"
+        },
+        {
+          "template_id": "no_change_60",
+          "question": "Did the {selected_object} disappear?",
+          "answer": "No.",
+          "required_variables": [
+            "selected_object"
+          ],
+          "answer_style": "yes_no"
+        }
+      ]
+    }
+  ],
+  "templates_per_change_type": 60,
+  "content_revision": "user-chinese-reviewed-2026-07-23",
+  "sampling_salt": 1
+}

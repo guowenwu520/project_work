@@ -1,0 +1,172 @@
+{
+  "jobs": [
+    {
+      "id": 0,
+      "stableProp": "Mug",
+      "originalProp": "Camera",
+      "replacementProp": "ToyCar",
+      "seed": 1000
+    },
+    {
+      "id": 1,
+      "stableProp": "Bottle",
+      "originalProp": "Vase",
+      "replacementProp": "Plant",
+      "seed": 1097
+    },
+    {
+      "id": 2,
+      "stableProp": "Plant",
+      "originalProp": "Bottle",
+      "replacementProp": "Bowl",
+      "seed": 1194
+    },
+    {
+      "id": 3,
+      "stableProp": "Camera",
+      "originalProp": "Lamp",
+      "replacementProp": "Clock",
+      "seed": 1291
+    },
+    {
+      "id": 4,
+      "stableProp": "Clock",
+      "originalProp": "Globe",
+      "replacementProp": "Mug",
+      "seed": 1388
+    },
+    {
+      "id": 5,
+      "stableProp": "Books",
+      "originalProp": "Clock",
+      "replacementProp": "Lamp",
+      "seed": 1485
+    },
+    {
+      "id": 6,
+      "stableProp": "Lamp",
+      "originalProp": "Bowl",
+      "replacementProp": "Bottle",
+      "seed": 1582
+    },
+    {
+      "id": 7,
+      "stableProp": "ToyCar",
+      "originalProp": "Plant",
+      "replacementProp": "Vase",
+      "seed": 1679
+    },
+    {
+      "id": 8,
+      "stableProp": "Vase",
+      "originalProp": "ToyCar",
+      "replacementProp": "Camera",
+      "seed": 1776
+    },
+    {
+      "id": 9,
+      "stableProp": "Bowl",
+      "originalProp": "Mug",
+      "replacementProp": "Candle",
+      "seed": 1873
+    },
+    {
+      "id": 10,
+      "stableProp": "Candle",
+      "originalProp": "Books",
+      "replacementProp": "Lamp",
+      "seed": 1970
+    },
+    {
+      "id": 11,
+      "stableProp": "Globe",
+      "originalProp": "Candle",
+      "replacementProp": "Mug",
+      "seed": 2067
+    },
+    {
+      "id": 12,
+      "stableProp": "Mug",
+      "originalProp": "Camera",
+      "replacementProp": "ToyCar",
+      "seed": 2164
+    },
+    {
+      "id": 13,
+      "stableProp": "Bottle",
+      "originalProp": "Vase",
+      "replacementProp": "Plant",
+      "seed": 2261
+    },
+    {
+      "id": 14,
+      "stableProp": "Plant",
+      "originalProp": "Bottle",
+      "replacementProp": "Bowl",
+      "seed": 2358
+    },
+    {
+      "id": 15,
+      "stableProp": "Camera",
+      "originalProp": "Lamp",
+      "replacementProp": "Clock",
+      "seed": 2455
+    },
+    {
+      "id": 16,
+      "stableProp": "Clock",
+      "originalProp": "Globe",
+      "replacementProp": "Mug",
+      "seed": 2552
+    },
+    {
+      "id": 17,
+      "stableProp": "Books",
+      "originalProp": "Clock",
+      "replacementProp": "Lamp",
+      "seed": 2649
+    },
+    {
+      "id": 18,
+      "stableProp": "Lamp",
+      "originalProp": "Bowl",
+      "replacementProp": "Bottle",
+      "seed": 2746
+    },
+    {
+      "id": 19,
+      "stableProp": "ToyCar",
+      "originalProp": "Plant",
+      "replacementProp": "Vase",
+      "seed": 2843
+    },
+    {
+      "id": 20,
+      "stableProp": "Vase",
+      "originalProp": "ToyCar",
+      "replacementProp": "Camera",
+      "seed": 2940
+    },
+    {
+      "id": 21,
+      "stableProp": "Bowl",
+      "originalProp": "Mug",
+      "replacementProp": "Candle",
+      "seed": 3037
+    },
+    {
+      "id": 22,
+      "stableProp": "Candle",
+      "originalProp": "Books",
+      "replacementProp": "Lamp",
+      "seed": 3134
+    },
+    {
+      "id": 23,
+      "stableProp": "Globe",
+      "originalProp": "Candle",
+      "replacementProp": "Mug",
+      "seed": 3231
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# Normalize text files across Linux/Windows.
+* text=auto
+
+*.cs       text eol=lf
+*.shader   text eol=lf
+*.compute  text eol=lf
+*.cginc    text eol=lf
+*.hlsl     text eol=lf
+
+*.sh       text eol=lf
+*.py       text eol=lf
+
+*.json     text eol=lf
+*.md       text eol=lf
+*.txt      text eol=lf
+*.yaml     text eol=lf
+*.yml      text eol=lf
+
+# Unity YAML text assets.
+*.unity    text eol=lf
+*.prefab   text eol=lf
+*.asset    text eol=lf
+*.meta     text eol=lf
+*.mat      text eol=lf
+*.anim     text eol=lf
+*.controller text eol=lf
+
+# Binary files.
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.webp     binary
+*.mp4      binary
+*.wav      binary
+*.mp3      binary
+*.fbx      binary
+*.obj      binary
+*.glb      binary
+*.gltf     binary
