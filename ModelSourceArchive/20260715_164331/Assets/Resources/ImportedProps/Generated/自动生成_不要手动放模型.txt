@@ -1,0 +1,2 @@
+此目录由 RawModelPreprocessor 自动生成。
+请把原始 FBX、OBJ、GLB、glTF 放到 Assets/RawModels/，不要直接编辑这里的 Prefab。

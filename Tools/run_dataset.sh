@@ -15,7 +15,7 @@ fi
 START_INDEX="${START_INDEX:-0}"
 COUNT="${COUNT:-24}"
 FPS="${FPS:-30}"
-# Timeline: 8 + 5 + 5 + 5 + 8 = 31 seconds.
+# Timeline: 8 + 3 + 9 + 3 + 8 = 31 seconds.
 # Fixed-rate sampling produces duration * FPS frames, without +1.
 CAPTURE_DURATION_SECONDS="${CAPTURE_DURATION_SECONDS:-31}"
 WIDTH="${WIDTH:-384}"

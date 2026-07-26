@@ -20,6 +20,7 @@
   }
 ]
 
+ python3 video_dataset_split_merge.py split    ./Output/videodata.json         datav5/test       datav5/train         --count 100         --seed 42
 拆分：
 
     python3 video_dataset_split_merge.py split \

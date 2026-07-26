@@ -1,8 +1,8 @@
 {
-  "schema_version": "3.1",
+  "schema_version": "3.4",
   "scene_type": "tabletop",
   "questions_per_scene": 8,
-  "selection_rule": "For each generated scene, combine the scene seed with sampling_salt, shuffle the matching 60-template pool, skip templates with unavailable placeholders, and select 8 unique valid QA pairs.",
+  "selection_rule": "For each change type, process completed scenes in batch-id order and use a deterministic balanced random cycle. Select 8 unique renderable questions per scene, prioritizing templates not yet used in the current 60-template cycle. Eight scenes therefore cover every template at least once when all 60 templates are renderable.",
   "answer_policy": "Templates 1-40 are descriptive. Templates 41-60 are closed-ended and answer exactly Yes. or No.",
   "final_record_format": {
     "video_id": "scene_000123",
@@ -15,6 +15,23 @@
       }
     ]
   },
+  "templates_per_change_type": 60,
+  "content_revision": "user-chinese-authoritative-english-v4-2026-07-24",
+  "sampling_salt": 1,
+  "camera_path": "The camera starts on one side of the table, turns away, walks around the table, reaches the opposite side, and then looks toward the table again.",
+  "viewpoint_policy": {
+    "first_view_left": "the left side of the table in the first view",
+    "first_view_right": "the right side of the table in the first view",
+    "second_view_left": "the left side of the table in the second view",
+    "second_view_right": "the right side of the table in the second view",
+    "same_physical_place_mapping": {
+      "the left side of the table in the first view": "the right side of the table in the second view",
+      "the right side of the table in the first view": "the left side of the table in the second view"
+    },
+    "wording_rule": "Use the first view toward the table and the second view toward the table naturally in sentences. Do not use parenthetical view labels or tabletop-state wording.",
+    "movement_rule": "When an object crosses physical sides, prefer 'moved to the other side of the table'.",
+    "reference_rule": "Describe left/right directly relative to the table and the relevant view, not relative to another object."
+  },
   "change_types": [
     {
       "change_type": "one_object_replacement",
@@ -23,11 +40,11 @@
       "templates": [
         {
           "template_id": "one_object_replacement_01",
-          "question": "What changed during the video?",
+          "question": "What changed in the tabletop scene itself?",
           "answer": "The {old_object} was replaced by the {new_object}.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
@@ -42,8 +59,8 @@
         },
         {
           "template_id": "one_object_replacement_03",
-          "question": "Which object appeared after the camera returned?",
-          "answer": "The {new_object} appeared.",
+          "question": "Which new object appears after the camera reaches the second view toward the table?",
+          "answer": "The {new_object} appears.",
           "required_variables": [
             "new_object"
           ],
@@ -54,15 +71,15 @@
           "question": "What took the place of the {old_object}?",
           "answer": "The {new_object} took its place.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_05",
-          "question": "Which object disappeared from the final scene?",
-          "answer": "The {old_object} disappeared from the final scene.",
+          "question": "Which original object is no longer present in the second view?",
+          "answer": "The {old_object} is no longer present in the second view.",
           "required_variables": [
             "old_object"
           ],
@@ -70,8 +87,8 @@
         },
         {
           "template_id": "one_object_replacement_06",
-          "question": "Which object is new in the final scene?",
-          "answer": "The {new_object} is new in the final scene.",
+          "question": "Which object is new in the second view?",
+          "answer": "The {new_object} is new in the second view.",
           "required_variables": [
             "new_object"
           ],
@@ -79,43 +96,41 @@
         },
         {
           "template_id": "one_object_replacement_07",
-          "question": "What was at {original_position} before the change?",
-          "answer": "The {old_object} was at {original_position}.",
+          "question": "What object was on {initial_position} before the replacement?",
+          "answer": "The {old_object} was on {initial_position}.",
           "required_variables": [
-            "old_object",
-            "original_position"
+            "initial_position",
+            "old_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_08",
-          "question": "What was at {original_position} after the change?",
-          "answer": "The {new_object} was at {original_position}.",
+          "question": "What object is on {final_position} after the replacement?",
+          "answer": "The {new_object} is on {final_position}.",
           "required_variables": [
-            "new_object",
-            "original_position"
+            "final_position",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_09",
           "question": "Describe the replacement that occurred.",
-          "answer": "The {old_object} was replaced by the {new_object} at {original_position}.",
+          "answer": "The {old_object} was replaced by the {new_object} without changing the occupied physical place on the table.",
           "required_variables": [
-            "new_object",
             "old_object",
-            "original_position"
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_10",
-          "question": "How did the object at {original_position} change?",
+          "question": "How did the item change?",
           "answer": "It changed from the {old_object} to the {new_object}.",
           "required_variables": [
-            "new_object",
             "old_object",
-            "original_position"
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
@@ -124,25 +139,25 @@
           "question": "What happened to the {old_object}?",
           "answer": "It was removed and replaced by the {new_object}.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_12",
-          "question": "Which object now occupies the original position of the {old_object}?",
-          "answer": "The {new_object} now occupies that position.",
+          "question": "Which object occupies the former position of the {old_object} in the second view?",
+          "answer": "The {new_object} occupies that position in the second view.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_13",
-          "question": "Which object was present only at the beginning?",
-          "answer": "The {old_object} was present only at the beginning.",
+          "question": "Which object was present only in the first view?",
+          "answer": "The {old_object} was present only in the first view.",
           "required_variables": [
             "old_object"
           ],
@@ -150,8 +165,8 @@
         },
         {
           "template_id": "one_object_replacement_14",
-          "question": "Which object was present only at the end?",
-          "answer": "The {new_object} was present only at the end.",
+          "question": "Which object is present only in the second view?",
+          "answer": "The {new_object} is present only in the second view.",
           "required_variables": [
             "new_object"
           ],
@@ -159,18 +174,18 @@
         },
         {
           "template_id": "one_object_replacement_15",
-          "question": "What is the main difference between the first and last views?",
-          "answer": "The {old_object} in the first view became the {new_object} in the last view.",
+          "question": "Ignoring the change in viewing side, what is the main difference between the first view toward the table and the second view toward the table?",
+          "answer": "The {old_object} in the first view toward the table is replaced by the {new_object} in the second view toward the table.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_16",
-          "question": "How many objects were on the table at the beginning?",
-          "answer": "There were {initial_count} objects on the table.",
+          "question": "How many objects were on the table in the first view?",
+          "answer": "There were {initial_count} objects on the table in the first view.",
           "required_variables": [
             "initial_count"
           ],
@@ -178,8 +193,8 @@
         },
         {
           "template_id": "one_object_replacement_17",
-          "question": "How many objects were on the table at the end?",
-          "answer": "There were {final_count} objects on the table.",
+          "question": "How many objects are on the table in the second view?",
+          "answer": "There are {final_count} objects on the table in the second view.",
           "required_variables": [
             "final_count"
           ],
@@ -187,8 +202,8 @@
         },
         {
           "template_id": "one_object_replacement_18",
-          "question": "How did the total number of objects change?",
-          "answer": "The total remained {final_count} because one object replaced another.",
+          "question": "How does the total object count compare between the first and second views?",
+          "answer": "The total remains {final_count}; one object is replaced by another.",
           "required_variables": [
             "final_count"
           ],
@@ -196,8 +211,8 @@
         },
         {
           "template_id": "one_object_replacement_19",
-          "question": "Is the {new_object} in the same position as the replaced {old_object}?",
-          "answer": "Yes. The {new_object} occupies the same position that the {old_object} occupied before the replacement.",
+          "question": "Does the {new_object} in the second view occupy the same physical position that the {old_object} occupied in the first view?",
+          "answer": "Yes. The {new_object} occupies the same physical position that the {old_object} occupied in the first view.",
           "required_variables": [
             "new_object",
             "old_object"
@@ -206,27 +221,27 @@
         },
         {
           "template_id": "one_object_replacement_20",
-          "question": "What property of the scene remained unchanged after the replacement?",
-          "answer": "The position remained unchanged: the {old_object} before the replacement and the {new_object} afterward occupied the same location.",
+          "question": "What remains unchanged after the replacement?",
+          "answer": "The physical position remains unchanged: the {old_object} occupied it in the first view, and the {new_object} occupies it in the second view.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_21",
-          "question": "Name the original object and its replacement.",
-          "answer": "The original object was the {old_object}, and the replacement was the {new_object}.",
+          "question": "Which object was replaced, and which object replaces it in the second view?",
+          "answer": "The {old_object} was replaced, and the {new_object} replaces it in the second view.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_22",
-          "question": "What single-object difference can be seen at the end?",
+          "question": "What single-object difference is visible in the second view?",
           "answer": "The {new_object} is present instead of the {old_object}.",
           "required_variables": [
             "new_object",
@@ -239,8 +254,8 @@
           "question": "Which object would need to be restored to recreate the beginning?",
           "answer": "The {old_object} would need to replace the {new_object}.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
@@ -267,19 +282,18 @@
           "question": "How are the {old_object} and the {new_object} related in the change?",
           "answer": "The {new_object} directly replaced the {old_object}.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_27",
-          "question": "Which item changed identity while keeping the same position?",
-          "answer": "The item at {original_position} changed from the {old_object} to the {new_object}.",
+          "question": "Which item changed identity while staying in the same physical place?",
+          "answer": "The {old_object} changed into the {new_object}.",
           "required_variables": [
-            "new_object",
             "old_object",
-            "original_position"
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
@@ -292,15 +306,15 @@
         },
         {
           "template_id": "one_object_replacement_29",
-          "question": "At least how many replacements occurred?",
-          "answer": "At least one object replacement occurred.",
+          "question": "How many object replacements occurred?",
+          "answer": "One object replacement occurred.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_30",
-          "question": "What is the most noticeable change in the final scene?",
-          "answer": "The {new_object} appears where the {old_object} used to be.",
+          "question": "What is the most noticeable change in the second view?",
+          "answer": "The {new_object} is where the {old_object} was in the first view.",
           "required_variables": [
             "new_object",
             "old_object"
@@ -309,88 +323,86 @@
         },
         {
           "template_id": "one_object_replacement_31",
-          "question": "Which pair of objects distinguishes the first frame from the last frame?",
-          "answer": "The differing pair is the {old_object} and the {new_object}.",
+          "question": "Which two object identities differ between the first view toward the table and the second view toward the table?",
+          "answer": "The differing identities are the {old_object} in the first view toward the table and the {new_object} in the second view toward the table.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_32",
-          "question": "What object is now {relative_position} the {reference_object}?",
-          "answer": "The {new_object} is now {relative_position} the {reference_object}.",
+          "question": "Which new object is visible on {final_position}?",
+          "answer": "The {new_object} is visible on {final_position}.",
           "required_variables": [
-            "new_object",
-            "reference_object",
-            "relative_position"
+            "final_position",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_33",
-          "question": "What object was originally {relative_position} the {reference_object}?",
-          "answer": "The {old_object} was originally {relative_position} the {reference_object}.",
+          "question": "Which original object was on {initial_position}?",
+          "answer": "The {old_object} was on {initial_position}.",
           "required_variables": [
-            "old_object",
-            "reference_object",
-            "relative_position"
+            "initial_position",
+            "old_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_34",
-          "question": "Did the arrangement change, or only the object identity?",
-          "answer": "The arrangement stayed the same, but the object identity changed.",
+          "question": "Does the arrangement change, or does only the object identity change?",
+          "answer": "The arrangement stays the same; only the object identity changes.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_35",
-          "question": "Describe the final state of the changed location.",
-          "answer": "The {new_object} is at {original_position}, replacing the {old_object}.",
+          "question": "Describe the change of the second view.",
+          "answer": "The {new_object} is on {final_position}, replacing the {old_object}.",
           "required_variables": [
             "new_object",
-            "old_object",
-            "original_position"
+            "final_position",
+            "old_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_36",
-          "question": "What object should a viewer look for to confirm the change?",
-          "answer": "The viewer should look for the {new_object} at {original_position}.",
+          "question": "Which object should a viewer look for on {final_position} to confirm the change?",
+          "answer": "The viewer should look for the {new_object}.",
           "required_variables": [
-            "new_object",
-            "original_position"
+            "final_position",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_37",
-          "question": "What object is no longer visible near the {reference_object}?",
-          "answer": "The {old_object} is no longer visible near the {reference_object}.",
+          "question": "Which object that was on {initial_position} is absent from the second view?",
+          "answer": "The {old_object} is absent from the second view.",
           "required_variables": [
-            "old_object",
-            "reference_object"
+            "initial_position",
+            "old_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_38",
-          "question": "What object is visible near the {reference_object} at the end?",
-          "answer": "The {new_object} is visible near the {reference_object}.",
+          "question": "Which object is visible on {final_position} in the second view?",
+          "answer": "The {new_object} is visible there.",
           "required_variables": [
-            "new_object",
-            "reference_object"
+            "final_position",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "one_object_replacement_39",
-          "question": "Summarize the final scene relative to the initial scene.",
-          "answer": "The scene is unchanged except that the {new_object} replaces the {old_object}.",
+          "question": "Compared with the first view toward the table, what changes are visible on the table in the second view toward the table?",
+          "answer": "Apart from the camera viewing the table from the opposite side, the only change is that the {new_object} replaces the {old_object}.",
           "required_variables": [
             "new_object",
             "old_object"
@@ -399,11 +411,11 @@
         },
         {
           "template_id": "one_object_replacement_40",
-          "question": "What replacement is evident after the camera returns?",
+          "question": "Which replacement can be confirmed after the camera moves to the second view toward the table?",
           "answer": "The {old_object} has been replaced by the {new_object}.",
           "required_variables": [
-            "new_object",
-            "old_object"
+            "old_object",
+            "new_object"
           ],
           "answer_style": "descriptive"
         },
@@ -418,7 +430,7 @@
         },
         {
           "template_id": "one_object_replacement_42",
-          "question": "Did the {new_object} appear after the camera returned?",
+          "question": "Does the {new_object} appear when the camera moves to the second view toward the table?",
           "answer": "Yes.",
           "required_variables": [
             "new_object"
@@ -427,20 +439,20 @@
         },
         {
           "template_id": "one_object_replacement_43",
-          "question": "Did the item at {original_position} change identity?",
+          "question": "Did the item on {initial_position} change identity?",
           "answer": "Yes.",
           "required_variables": [
-            "original_position"
+            "initial_position"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "one_object_replacement_44",
-          "question": "Is the {new_object} at {original_position} in the final scene?",
+          "question": "Is the {new_object} on {final_position} in the second view?",
           "answer": "Yes.",
           "required_variables": [
             "new_object",
-            "original_position"
+            "final_position"
           ],
           "answer_style": "yes_no"
         },
@@ -453,14 +465,14 @@
         },
         {
           "template_id": "one_object_replacement_46",
-          "question": "Did the total number of objects remain the same?",
+          "question": "Does the total number of objects stay the same between the first and second views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "one_object_replacement_47",
-          "question": "Did the replacement occupy the original location of the {old_object}?",
+          "question": "Does the replacement occupy the same physical position as the {old_object} did in the first view?",
           "answer": "Yes.",
           "required_variables": [
             "old_object"
@@ -469,7 +481,7 @@
         },
         {
           "template_id": "one_object_replacement_48",
-          "question": "Was the {old_object} present only in the initial scene?",
+          "question": "Was the {old_object} present only in the first view?",
           "answer": "Yes.",
           "required_variables": [
             "old_object"
@@ -478,7 +490,7 @@
         },
         {
           "template_id": "one_object_replacement_49",
-          "question": "Was the {new_object} present only in the final scene?",
+          "question": "Is the {new_object} present only in the second view?",
           "answer": "Yes.",
           "required_variables": [
             "new_object"
@@ -487,16 +499,14 @@
         },
         {
           "template_id": "one_object_replacement_50",
-          "question": "Did the {reference_object} remain unchanged?",
+          "question": "Does the object that is not replaced remain unchanged?",
           "answer": "Yes.",
-          "required_variables": [
-            "reference_object"
-          ],
+          "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "one_object_replacement_51",
-          "question": "Is the {old_object} still present in the final scene?",
+          "question": "Is the {old_object} still present in the second view?",
           "answer": "No.",
           "required_variables": [
             "old_object"
@@ -505,7 +515,7 @@
         },
         {
           "template_id": "one_object_replacement_52",
-          "question": "Was the {new_object} already present in the initial scene?",
+          "question": "Was the {new_object} already present in the first view?",
           "answer": "No.",
           "required_variables": [
             "new_object"
@@ -535,7 +545,7 @@
         },
         {
           "template_id": "one_object_replacement_56",
-          "question": "Did the changed object only change color?",
+          "question": "Did any object change color?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -563,11 +573,9 @@
         },
         {
           "template_id": "one_object_replacement_60",
-          "question": "Was the {reference_object} replaced?",
+          "question": "Was the other object replaced?",
           "answer": "No.",
-          "required_variables": [
-            "reference_object"
-          ],
+          "required_variables": [],
           "answer_style": "yes_no"
         }
       ]
@@ -579,13 +587,13 @@
       "templates": [
         {
           "template_id": "two_objects_replacement_01",
-          "question": "What changed during the video?",
+          "question": "What changed in the tabletop scene itself?",
           "answer": "The {old_object_1} was replaced by the {new_object_1}, and the {old_object_2} was replaced by the {new_object_2}.",
           "required_variables": [
-            "new_object_1",
-            "new_object_2",
             "old_object_1",
-            "old_object_2"
+            "new_object_1",
+            "old_object_2",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
@@ -608,8 +616,8 @@
         },
         {
           "template_id": "two_objects_replacement_04",
-          "question": "Which two new objects appeared?",
-          "answer": "The {new_object_1} and the {new_object_2} appeared.",
+          "question": "Which two new objects are visible in the second view?",
+          "answer": "The {new_object_1} and the {new_object_2} are visible in the second view.",
           "required_variables": [
             "new_object_1",
             "new_object_2"
@@ -621,8 +629,8 @@
           "question": "What replaced the {old_object_1}?",
           "answer": "The {new_object_1} replaced the {old_object_1}.",
           "required_variables": [
-            "new_object_1",
-            "old_object_1"
+            "old_object_1",
+            "new_object_1"
           ],
           "answer_style": "descriptive"
         },
@@ -631,48 +639,48 @@
           "question": "What replaced the {old_object_2}?",
           "answer": "The {new_object_2} replaced the {old_object_2}.",
           "required_variables": [
-            "new_object_2",
-            "old_object_2"
+            "old_object_2",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_07",
-          "question": "Which object disappeared from {position_1}?",
-          "answer": "The {old_object_1} disappeared from {position_1}.",
+          "question": "Which object disappeared from {initial_position_1}?",
+          "answer": "The {old_object_1} disappeared from {initial_position_1}.",
           "required_variables": [
-            "old_object_1",
-            "position_1"
+            "initial_position_1",
+            "old_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_08",
-          "question": "Which object disappeared from {position_2}?",
-          "answer": "The {old_object_2} disappeared from {position_2}.",
+          "question": "Which object disappeared from {initial_position_2}?",
+          "answer": "The {old_object_2} disappeared from {initial_position_2}.",
           "required_variables": [
-            "old_object_2",
-            "position_2"
+            "initial_position_2",
+            "old_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_09",
-          "question": "Which object is now at {position_1}?",
-          "answer": "The {new_object_1} is now at {position_1}.",
+          "question": "Which new object is on {final_position_1}?",
+          "answer": "The {new_object_1} is there.",
           "required_variables": [
-            "new_object_1",
-            "position_1"
+            "final_position_1",
+            "new_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_10",
-          "question": "Which object is now at {position_2}?",
-          "answer": "The {new_object_2} is now at {position_2}.",
+          "question": "Which new object is on {final_position_2}?",
+          "answer": "The {new_object_2} is there.",
           "required_variables": [
-            "new_object_2",
-            "position_2"
+            "final_position_2",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
@@ -681,59 +689,59 @@
           "question": "Describe both replacements.",
           "answer": "The {old_object_1} became the {new_object_1}, while the {old_object_2} became the {new_object_2}.",
           "required_variables": [
-            "new_object_1",
-            "new_object_2",
             "old_object_1",
-            "old_object_2"
+            "new_object_1",
+            "old_object_2",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_12",
-          "question": "What was at {position_1} before the changes?",
-          "answer": "The {old_object_1} was at {position_1}.",
+          "question": "What was on {initial_position_1} before the replacements?",
+          "answer": "The {old_object_1} was there.",
           "required_variables": [
-            "old_object_1",
-            "position_1"
+            "initial_position_1",
+            "old_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_13",
-          "question": "What was at {position_2} before the changes?",
-          "answer": "The {old_object_2} was at {position_2}.",
+          "question": "What was on {initial_position_2} before the replacements?",
+          "answer": "The {old_object_2} was there.",
           "required_variables": [
-            "old_object_2",
-            "position_2"
+            "initial_position_2",
+            "old_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_14",
-          "question": "What replacement occurred at {position_1}?",
-          "answer": "At {position_1}, the {new_object_1} replaced the {old_object_1}.",
+          "question": "Which replacement occurred on {initial_position_1}?",
+          "answer": "On {initial_position_1}, the {new_object_1} replaced the {old_object_1}.",
           "required_variables": [
-            "new_object_1",
+            "initial_position_1",
             "old_object_1",
-            "position_1"
+            "new_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_15",
-          "question": "What replacement occurred at {position_2}?",
-          "answer": "At {position_2}, the {new_object_2} replaced the {old_object_2}.",
+          "question": "Which replacement occurred on {initial_position_2}?",
+          "answer": "On {initial_position_2}, the {new_object_2} replaced the {old_object_2}.",
           "required_variables": [
-            "new_object_2",
+            "initial_position_2",
             "old_object_2",
-            "position_2"
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_16",
-          "question": "Which objects were present only at the beginning?",
-          "answer": "The {old_object_1} and the {old_object_2} were present only at the beginning.",
+          "question": "Which objects were present only in the first view?",
+          "answer": "The {old_object_1} and the {old_object_2} were present only in the first view.",
           "required_variables": [
             "old_object_1",
             "old_object_2"
@@ -742,8 +750,8 @@
         },
         {
           "template_id": "two_objects_replacement_17",
-          "question": "Which objects were present only at the end?",
-          "answer": "The {new_object_1} and the {new_object_2} were present only at the end.",
+          "question": "Which objects are present only in the second view?",
+          "answer": "The {new_object_1} and the {new_object_2} are present only in the second view.",
           "required_variables": [
             "new_object_1",
             "new_object_2"
@@ -752,8 +760,8 @@
         },
         {
           "template_id": "two_objects_replacement_18",
-          "question": "How many objects were on the table at the beginning?",
-          "answer": "There were {initial_count} objects on the table.",
+          "question": "How many objects were on the table in the first view?",
+          "answer": "There were {initial_count} objects on the table in the first view.",
           "required_variables": [
             "initial_count"
           ],
@@ -761,8 +769,8 @@
         },
         {
           "template_id": "two_objects_replacement_19",
-          "question": "How many objects were on the table at the end?",
-          "answer": "There were {final_count} objects on the table.",
+          "question": "How many objects are on the table in the second view?",
+          "answer": "There are {final_count} objects on the table in the second view.",
           "required_variables": [
             "final_count"
           ],
@@ -770,8 +778,8 @@
         },
         {
           "template_id": "two_objects_replacement_20",
-          "question": "How did the total object count change?",
-          "answer": "The total remained {final_count} because two objects were replaced by two others.",
+          "question": "How does the total object count compare between the first and second views?",
+          "answer": "The total remains {final_count}; two original objects are replaced by two new objects.",
           "required_variables": [
             "final_count"
           ],
@@ -779,34 +787,36 @@
         },
         {
           "template_id": "two_objects_replacement_21",
-          "question": "Which objects occupied {position_1} before and after the replacements?",
-          "answer": "The {old_object_1} occupied {position_1} before the replacements, and the {new_object_1} occupied it afterward.",
+          "question": "Which object was on {initial_position_1}, and which object is on {final_position_1}?",
+          "answer": "The {old_object_1} was there initially, and the {new_object_1} is there finally.",
           "required_variables": [
-            "new_object_1",
+            "initial_position_1",
+            "final_position_1",
             "old_object_1",
-            "position_1"
+            "new_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_22",
-          "question": "Which objects occupied {position_2} before and after the replacements?",
-          "answer": "The {old_object_2} occupied {position_2} before the replacements, and the {new_object_2} occupied it afterward.",
+          "question": "Which object was on {initial_position_2}, and which object is on {final_position_2}?",
+          "answer": "The {old_object_2} was there initially, and the {new_object_2} is there finally.",
           "required_variables": [
-            "new_object_2",
+            "initial_position_2",
+            "final_position_2",
             "old_object_2",
-            "position_2"
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_23",
-          "question": "What are the two main differences between the first and last views?",
+          "question": "Ignoring the change in viewing direction, what are the two main differences between the first view toward the table and the second view toward the table?",
           "answer": "The {new_object_1} replaces the {old_object_1}, and the {new_object_2} replaces the {old_object_2}.",
           "required_variables": [
             "new_object_1",
-            "new_object_2",
             "old_object_1",
+            "new_object_2",
             "old_object_2"
           ],
           "answer_style": "descriptive"
@@ -833,7 +843,7 @@
         },
         {
           "template_id": "two_objects_replacement_26",
-          "question": "What should replace the {new_object_1} to restore the first view?",
+          "question": "What should replace the {new_object_1} to recreate the first view toward the table?",
           "answer": "The {old_object_1} should replace it.",
           "required_variables": [
             "new_object_1",
@@ -843,7 +853,7 @@
         },
         {
           "template_id": "two_objects_replacement_27",
-          "question": "What should replace the {new_object_2} to restore the first view?",
+          "question": "What should replace the {new_object_2} to recreate the first view toward the table?",
           "answer": "The {old_object_2} should replace it.",
           "required_variables": [
             "new_object_2",
@@ -853,39 +863,34 @@
         },
         {
           "template_id": "two_objects_replacement_28",
-          "question": "Did the two changed locations remain the same?",
-          "answer": "Both replacements stayed at {position_1} and {position_2}.",
-          "required_variables": [
-            "position_1",
-            "position_2"
-          ],
+          "question": "Does the distance between the two new objects remain unchanged in the second view toward the table?",
+          "answer": "The distance remains unchanged; in the second view, it is the same as the distance between the two original objects in the first view.",
+          "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_29",
-          "question": "What changed at {position_1} and {position_2}?",
-          "answer": "The {old_object_1} became the {new_object_1} at {position_1}, and the {old_object_2} became the {new_object_2} at {position_2}.",
+          "question": "What changed on the left side of the table in the first view and on the right side of the table in the first view?",
+          "answer": "On the left side of the table in the first view, the {old_object_1} was replaced by the {new_object_1}; on the right side of the table in the first view, the {old_object_2} was replaced by the {new_object_2}.",
           "required_variables": [
-            "new_object_1",
-            "new_object_2",
             "old_object_1",
+            "new_object_1",
             "old_object_2",
-            "position_1",
-            "position_2"
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_30",
-          "question": "Apart from the two replacements, did anything else change?",
-          "answer": "No. Apart from the two replacements, everything else remained unchanged.",
+          "question": "Apart from the two replacements, did anything else in the tabletop scene change?",
+          "answer": "No. Apart from the two replacements, the rest of the tabletop scene remained unchanged.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_31",
-          "question": "What final objects mark the two changed locations?",
-          "answer": "The {new_object_1} and the {new_object_2} mark the changed locations.",
+          "question": "Which two new objects mark the changed positions in the second view?",
+          "answer": "The {new_object_1} and the {new_object_2} mark the changed positions.",
           "required_variables": [
             "new_object_1",
             "new_object_2"
@@ -894,8 +899,8 @@
         },
         {
           "template_id": "two_objects_replacement_32",
-          "question": "Which original objects are missing near the end?",
-          "answer": "The {old_object_1} and the {old_object_2} are missing.",
+          "question": "Which original objects are absent from the second view?",
+          "answer": "The {old_object_1} and the {old_object_2} are absent from the second view.",
           "required_variables": [
             "old_object_1",
             "old_object_2"
@@ -904,8 +909,8 @@
         },
         {
           "template_id": "two_objects_replacement_33",
-          "question": "Which new objects are visible near the end?",
-          "answer": "The {new_object_1} and the {new_object_2} are visible.",
+          "question": "Which new objects are visible in the second view?",
+          "answer": "The {new_object_1} and the {new_object_2} are visible in the second view.",
           "required_variables": [
             "new_object_1",
             "new_object_2"
@@ -915,76 +920,73 @@
         {
           "template_id": "two_objects_replacement_34",
           "question": "How can the two replacements be confirmed?",
-          "answer": "Compare {position_1} and {position_2}: the original objects have been replaced by the two new objects.",
-          "required_variables": [
-            "position_1",
-            "position_2"
-          ],
+          "answer": "Compare the two original objects in the first view toward the table with the two objects visible in the second view toward the table.",
+          "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_35",
-          "question": "What happened to the item at {position_1}?",
+          "question": "What happened to the item initially on {initial_position_1}?",
           "answer": "The {old_object_1} was replaced by the {new_object_1}.",
           "required_variables": [
-            "new_object_1",
+            "initial_position_1",
             "old_object_1",
-            "position_1"
+            "new_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_36",
-          "question": "What happened to the item at {position_2}?",
+          "question": "What happened to the item initially on {initial_position_2}?",
           "answer": "The {old_object_2} was replaced by the {new_object_2}.",
           "required_variables": [
-            "new_object_2",
+            "initial_position_2",
             "old_object_2",
-            "position_2"
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_37",
-          "question": "Which final object corresponds to the original {old_object_1}?",
-          "answer": "The corresponding final object is the {new_object_1}.",
+          "question": "Which object replaces the original {old_object_1} in the second view?",
+          "answer": "The {new_object_1} replaces the {old_object_1}.",
           "required_variables": [
-            "new_object_1",
-            "old_object_1"
+            "old_object_1",
+            "new_object_1"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_38",
-          "question": "Which final object corresponds to the original {old_object_2}?",
-          "answer": "The corresponding final object is the {new_object_2}.",
+          "question": "Which object replaces the original {old_object_2} in the second view?",
+          "answer": "The {new_object_2} replaces the {old_object_2}.",
           "required_variables": [
-            "new_object_2",
-            "old_object_2"
+            "old_object_2",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_39",
-          "question": "Summarize the final scene relative to the initial scene.",
-          "answer": "The scene is unchanged except for the two replacements: {old_object_1} to {new_object_1}, and {old_object_2} to {new_object_2}.",
+          "question": "Compared with the first view toward the table, summarize the changes on the table in the second view toward the table.",
+          "answer": "Apart from the opposite viewing direction, the only changes are two replacements: the {old_object_1} is replaced by the {new_object_1}, and the {old_object_2} is replaced by the {new_object_2}.",
           "required_variables": [
-            "new_object_1",
-            "new_object_2",
             "old_object_1",
-            "old_object_2"
+            "new_object_1",
+            "old_object_2",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "two_objects_replacement_40",
-          "question": "What double replacement is visible after the camera returns?",
-          "answer": "The {old_object_1} and {old_object_2} have been replaced by the {new_object_1} and {new_object_2}.",
+          "question": "Which two replacements are visible when comparing the first view toward the table with the second view toward the table?",
+          "answer": "The {old_object_1} and the {old_object_2} have been replaced by the {new_object_1} and the {new_object_2}, respectively.",
           "required_variables": [
-            "new_object_1",
-            "new_object_2",
             "old_object_1",
-            "old_object_2"
+            "old_object_2",
+            "new_object_1",
+            "new_object_2"
           ],
           "answer_style": "descriptive"
         },
@@ -1000,8 +1002,8 @@
           "question": "Was the {old_object_1} replaced by the {new_object_1}?",
           "answer": "Yes.",
           "required_variables": [
-            "new_object_1",
-            "old_object_1"
+            "old_object_1",
+            "new_object_1"
           ],
           "answer_style": "yes_no"
         },
@@ -1010,69 +1012,69 @@
           "question": "Was the {old_object_2} replaced by the {new_object_2}?",
           "answer": "Yes.",
           "required_variables": [
-            "new_object_2",
-            "old_object_2"
+            "old_object_2",
+            "new_object_2"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_44",
-          "question": "Did the {new_object_1} appear at {position_1}?",
+          "question": "Does the {new_object_1} appear on {final_position_1}?",
           "answer": "Yes.",
           "required_variables": [
             "new_object_1",
-            "position_1"
+            "final_position_1"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_45",
-          "question": "Did the {new_object_2} appear at {position_2}?",
+          "question": "Does the {new_object_2} appear on {final_position_2}?",
           "answer": "Yes.",
           "required_variables": [
             "new_object_2",
-            "position_2"
+            "final_position_2"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_46",
-          "question": "Did both original objects disappear from the final scene?",
+          "question": "Are both original objects absent from the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_47",
-          "question": "Did two new objects appear in the final scene?",
+          "question": "Are two new objects visible in the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_48",
-          "question": "Did the total object count remain the same?",
+          "question": "Does the total object count stay the same between the first and second views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_49",
-          "question": "Did both replacement objects stay at the original changed locations?",
+          "question": "Do both replacement objects occupy the same physical positions as the original objects did in the first view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_50",
-          "question": "Apart from the two replacements, did the object count and the two occupied positions remain unchanged?",
+          "question": "Ignoring the viewpoint change, do the object count and the two occupied physical positions remain unchanged apart from the replacements?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "two_objects_replacement_51",
-          "question": "Is the {old_object_1} still present at the end?",
+          "question": "Is the {old_object_1} still present in the second view?",
           "answer": "No.",
           "required_variables": [
             "old_object_1"
@@ -1081,7 +1083,7 @@
         },
         {
           "template_id": "two_objects_replacement_52",
-          "question": "Is the {old_object_2} still present at the end?",
+          "question": "Is the {old_object_2} still present in the second view?",
           "answer": "No.",
           "required_variables": [
             "old_object_2"
@@ -1125,7 +1127,7 @@
         },
         {
           "template_id": "two_objects_replacement_58",
-          "question": "Was the {new_object_1} present at the beginning?",
+          "question": "Was the {new_object_1} present in the first view?",
           "answer": "No.",
           "required_variables": [
             "new_object_1"
@@ -1134,7 +1136,7 @@
         },
         {
           "template_id": "two_objects_replacement_59",
-          "question": "Was the {new_object_2} present at the beginning?",
+          "question": "Was the {new_object_2} present in the first view?",
           "answer": "No.",
           "required_variables": [
             "new_object_2"
@@ -1157,12 +1159,12 @@
       "templates": [
         {
           "template_id": "same_object_color_change_01",
-          "question": "What changed during the video?",
+          "question": "What changed in the tabletop scene itself?",
           "answer": "The {object} changed from {original_color} to {new_color}.",
           "required_variables": [
-            "new_color",
             "object",
-            "original_color"
+            "original_color",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
@@ -1187,11 +1189,11 @@
         },
         {
           "template_id": "same_object_color_change_04",
-          "question": "What color is the {object} at the end?",
+          "question": "What color is the {object} in the second view?",
           "answer": "It is {new_color}.",
           "required_variables": [
-            "new_color",
-            "object"
+            "object",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
@@ -1200,27 +1202,27 @@
           "question": "How did the appearance of the {object} change?",
           "answer": "Its color changed from {original_color} to {new_color}.",
           "required_variables": [
-            "new_color",
             "object",
-            "original_color"
+            "original_color",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_06",
-          "question": "What color change occurred?",
-          "answer": "The {object} changed from {original_color} to {new_color}.",
+          "question": "What color change is visible in the second view toward the table?",
+          "answer": "The {object} has changed from {original_color} to {new_color}.",
           "required_variables": [
-            "new_color",
             "object",
-            "original_color"
+            "original_color",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_07",
-          "question": "Which object changed to {new_color} in the final scene?",
-          "answer": "The {object} changed to {new_color}.",
+          "question": "Which object is {new_color} in the second view?",
+          "answer": "The {object} is {new_color} in the second view.",
           "required_variables": [
             "new_color",
             "object"
@@ -1229,11 +1231,11 @@
         },
         {
           "template_id": "same_object_color_change_08",
-          "question": "Which object changed from {original_color}?",
-          "answer": "The {object} changed from {original_color}.",
+          "question": "Which object was originally {original_color}?",
+          "answer": "The {object} was originally {original_color}.",
           "required_variables": [
-            "object",
-            "original_color"
+            "original_color",
+            "object"
           ],
           "answer_style": "descriptive"
         },
@@ -1242,19 +1244,19 @@
           "question": "What happened to the {original_color} {object}?",
           "answer": "It became {new_color}.",
           "required_variables": [
-            "new_color",
+            "original_color",
             "object",
-            "original_color"
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_10",
-          "question": "Describe the final appearance of the changed object.",
-          "answer": "The {object} is {new_color} at the end.",
+          "question": "What color is the changed object in the second view toward the table?",
+          "answer": "The {object} is {new_color} in the second view.",
           "required_variables": [
-            "new_color",
-            "object"
+            "object",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
@@ -1269,18 +1271,17 @@
         },
         {
           "template_id": "same_object_color_change_12",
-          "question": "Did the {object} remain in the same location?",
-          "answer": "The {object} remained at {original_position}.",
+          "question": "Does the {object} remain in the same physical position?",
+          "answer": "The {object} remains in the same physical position as in the first view.",
           "required_variables": [
-            "object",
-            "original_position"
+            "object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_13",
-          "question": "What stayed unchanged about the {object}?",
-          "answer": "Its identity and position stayed unchanged.",
+          "question": "What remains unchanged about the {object}?",
+          "answer": "Its identity and physical position remain unchanged.",
           "required_variables": [
             "object"
           ],
@@ -1288,18 +1289,18 @@
         },
         {
           "template_id": "same_object_color_change_14",
-          "question": "Where was the color-changing object located?",
-          "answer": "The {object} was at {original_position}.",
+          "question": "Where was the color-changing object at the beginning?",
+          "answer": "The {object} was on {initial_position}.",
           "required_variables": [
             "object",
-            "original_position"
+            "initial_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_15",
-          "question": "Which item changed visually without being replaced?",
-          "answer": "The {object} changed visually without being replaced.",
+          "question": "Which object changed visually?",
+          "answer": "The {object} changed visually.",
           "required_variables": [
             "object"
           ],
@@ -1307,12 +1308,12 @@
         },
         {
           "template_id": "same_object_color_change_16",
-          "question": "What is the main visual difference between the first and last views?",
-          "answer": "The {object} is {original_color} at first and {new_color} at the end.",
+          "question": "Ignoring the change in viewing direction, what is the main difference between the first view toward the table and the second view toward the table?",
+          "answer": "The {object} was {original_color} in the first view and is {new_color} in the second view.",
           "required_variables": [
-            "new_color",
             "object",
-            "original_color"
+            "original_color",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
@@ -1334,8 +1335,8 @@
         },
         {
           "template_id": "same_object_color_change_19",
-          "question": "How many objects were present at the beginning?",
-          "answer": "There were {initial_count} objects.",
+          "question": "How many objects were present in the first view?",
+          "answer": "There were {initial_count} objects in the first view.",
           "required_variables": [
             "initial_count"
           ],
@@ -1343,8 +1344,8 @@
         },
         {
           "template_id": "same_object_color_change_20",
-          "question": "How many objects were present at the end?",
-          "answer": "There were {final_count} objects.",
+          "question": "How many objects are present in the second view?",
+          "answer": "There are {final_count} objects in the second view.",
           "required_variables": [
             "final_count"
           ],
@@ -1352,8 +1353,8 @@
         },
         {
           "template_id": "same_object_color_change_21",
-          "question": "How did the object count change?",
-          "answer": "The object count remained {final_count}.",
+          "question": "How does the object count compare between the first and second views?",
+          "answer": "The object count remains {final_count}.",
           "required_variables": [
             "final_count"
           ],
@@ -1361,8 +1362,8 @@
         },
         {
           "template_id": "same_object_color_change_22",
-          "question": "Which color is no longer visible on the {object}?",
-          "answer": "The {original_color} color is no longer visible on it.",
+          "question": "Which color is no longer visible on the {object} in the second view?",
+          "answer": "{original_color} is no longer visible on the {object}.",
           "required_variables": [
             "object",
             "original_color"
@@ -1371,11 +1372,11 @@
         },
         {
           "template_id": "same_object_color_change_23",
-          "question": "Which color appears on the {object} after the camera returns?",
-          "answer": "The {new_color} color appears on it.",
+          "question": "What color is the {object} after the camera reaches the second view toward the table?",
+          "answer": "It is {new_color}.",
           "required_variables": [
-            "new_color",
-            "object"
+            "object",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
@@ -1399,8 +1400,8 @@
         },
         {
           "template_id": "same_object_color_change_26",
-          "question": "What feature of the {object} stayed the same?",
-          "answer": "Its shape, identity, and position stayed the same.",
+          "question": "Which characteristics of the {object} remain unchanged?",
+          "answer": "Its shape, identity, and physical position remain unchanged.",
           "required_variables": [
             "object"
           ],
@@ -1408,50 +1409,48 @@
         },
         {
           "template_id": "same_object_color_change_27",
-          "question": "Which object is {relative_position} the {reference_object} and changed color?",
-          "answer": "The {object} is {relative_position} the {reference_object}.",
+          "question": "Which object on {final_position} changes color?",
+          "answer": "The {object} changes color.",
           "required_variables": [
-            "object",
-            "reference_object",
-            "relative_position"
-          ],
-          "answer_style": "descriptive"
-        },
-        {
-          "template_id": "same_object_color_change_28",
-          "question": "What color was the object {relative_position} the {reference_object} at first?",
-          "answer": "It was {original_color}.",
-          "required_variables": [
-            "original_color",
-            "reference_object",
-            "relative_position"
-          ],
-          "answer_style": "descriptive"
-        },
-        {
-          "template_id": "same_object_color_change_29",
-          "question": "What color was the {object} after the change?",
-          "answer": "The {object} was {new_color}.",
-          "required_variables": [
-            "new_color",
+            "final_position",
             "object"
           ],
           "answer_style": "descriptive"
         },
         {
-          "template_id": "same_object_color_change_30",
-          "question": "How can the initial and final appearances be distinguished?",
-          "answer": "The {object} changes from {original_color} in the first view to {new_color} in the last view.",
+          "template_id": "same_object_color_change_28",
+          "question": "What was the initial color of the object on {initial_position}?",
+          "answer": "It was {original_color}.",
           "required_variables": [
-            "new_color",
-            "object",
+            "initial_position",
             "original_color"
           ],
           "answer_style": "descriptive"
         },
         {
+          "template_id": "same_object_color_change_29",
+          "question": "How does the {object}'s color appear in the second view?",
+          "answer": "The {object} is {new_color}.",
+          "required_variables": [
+            "object",
+            "new_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
+          "template_id": "same_object_color_change_30",
+          "question": "Ignoring the change in viewing direction, how does the {object}'s appearance differ between the first view and the second view?",
+          "answer": "The {object} was {original_color} in the first view and is {new_color} in the second view.",
+          "required_variables": [
+            "object",
+            "original_color",
+            "new_color"
+          ],
+          "answer_style": "descriptive"
+        },
+        {
           "template_id": "same_object_color_change_31",
-          "question": "What would need to change to restore the first view?",
+          "question": "What color would the {object} need to return to in order to recreate the first view toward the table?",
           "answer": "The {object} would need to return to {original_color}.",
           "required_variables": [
             "object",
@@ -1471,18 +1470,18 @@
         },
         {
           "template_id": "same_object_color_change_33",
-          "question": "What color should the {object} be to match the final view?",
+          "question": "What color should the {object} be to match the second view?",
           "answer": "It should be {new_color}.",
           "required_variables": [
-            "new_color",
-            "object"
+            "object",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_34",
-          "question": "Did another object take the place of the {object}?",
-          "answer": "The same {object} remained; its color alone changed.",
+          "question": "Does another object take the place of the {object}?",
+          "answer": "No. The same {object} remains; only its color changes.",
           "required_variables": [
             "object"
           ],
@@ -1490,19 +1489,18 @@
         },
         {
           "template_id": "same_object_color_change_35",
-          "question": "What happened at {original_position}?",
-          "answer": "The {object} stayed there but changed from {original_color} to {new_color}.",
+          "question": "What changes at the table position occupied by the {object}?",
+          "answer": "The {object} remains there, but its color has changed from {original_color} to {new_color}.",
           "required_variables": [
-            "new_color",
             "object",
             "original_color",
-            "original_position"
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_36",
-          "question": "Which final object differs only in color from its initial state?",
+          "question": "Compared with the first view, which object differs only in color in the second view?",
           "answer": "The {object} differs only in color.",
           "required_variables": [
             "object"
@@ -1511,8 +1509,8 @@
         },
         {
           "template_id": "same_object_color_change_37",
-          "question": "Did the tabletop arrangement change?",
-          "answer": "The arrangement stayed the same; only the {object}'s color changed.",
+          "question": "Does the tabletop arrangement change?",
+          "answer": "No. The arrangement stays the same; only the {object}'s color changes.",
           "required_variables": [
             "object"
           ],
@@ -1523,30 +1521,30 @@
           "question": "Summarize the color transition.",
           "answer": "The {object} transitioned from {original_color} to {new_color}.",
           "required_variables": [
-            "new_color",
             "object",
-            "original_color"
+            "original_color",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_39",
-          "question": "What was the final color of the {object}, which was originally {original_color}?",
-          "answer": "Its final color was {new_color}.",
+          "question": "The {object} was {original_color} in the first view. What color is it in the second view?",
+          "answer": "It is {new_color} in the second view.",
           "required_variables": [
-            "new_color",
             "object",
-            "original_color"
+            "original_color",
+            "new_color"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "same_object_color_change_40",
-          "question": "Describe the final scene relative to the initial scene.",
-          "answer": "Everything is unchanged except that the {object} is now {new_color} instead of {original_color}.",
+          "question": "Compared with the first view toward the table, describe the table in the second view toward the table.",
+          "answer": "Apart from the opposite viewing direction, the only change on the table is that the {object} is now {new_color} instead of {original_color}.",
           "required_variables": [
-            "new_color",
             "object",
+            "new_color",
             "original_color"
           ],
           "answer_style": "descriptive"
@@ -1572,17 +1570,17 @@
         },
         {
           "template_id": "same_object_color_change_43",
-          "question": "Was the {object} {new_color} at the end?",
+          "question": "Is the {object} {new_color} in the second view?",
           "answer": "Yes.",
           "required_variables": [
-            "new_color",
-            "object"
+            "object",
+            "new_color"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "same_object_color_change_44",
-          "question": "Did the same {object} remain in the scene?",
+          "question": "Is the same {object} present in both views?",
           "answer": "Yes.",
           "required_variables": [
             "object"
@@ -1591,17 +1589,16 @@
         },
         {
           "template_id": "same_object_color_change_45",
-          "question": "Did the {object} stay at {original_position}?",
+          "question": "Does the {object} remain in its original physical position?",
           "answer": "Yes.",
           "required_variables": [
-            "object",
-            "original_position"
+            "object"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "same_object_color_change_46",
-          "question": "Did the total object count remain the same?",
+          "question": "Does the total object count stay the same between the first and second views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -1617,25 +1614,23 @@
         },
         {
           "template_id": "same_object_color_change_48",
-          "question": "Were all objects retained on the table?",
+          "question": "Are all original objects still on the table in the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "same_object_color_change_49",
-          "question": "Did the tabletop arrangement remain the same?",
+          "question": "Does the tabletop arrangement stay the same between the two views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "same_object_color_change_50",
-          "question": "Did the {reference_object} remain unchanged?",
+          "question": "Does the other object remain unchanged?",
           "answer": "Yes.",
-          "required_variables": [
-            "reference_object"
-          ],
+          "required_variables": [],
           "answer_style": "yes_no"
         },
         {
@@ -1667,7 +1662,7 @@
         },
         {
           "template_id": "same_object_color_change_54",
-          "question": "Was the {object} still {original_color} at the end?",
+          "question": "Is the {object} still {original_color} in the second view?",
           "answer": "No.",
           "required_variables": [
             "object",
@@ -1677,11 +1672,11 @@
         },
         {
           "template_id": "same_object_color_change_55",
-          "question": "Was the {object} already {new_color} at the beginning?",
+          "question": "Was the {object} already {new_color} in the first view?",
           "answer": "No.",
           "required_variables": [
-            "new_color",
-            "object"
+            "object",
+            "new_color"
           ],
           "answer_style": "yes_no"
         },
@@ -1708,18 +1703,16 @@
         },
         {
           "template_id": "same_object_color_change_59",
-          "question": "Did the first and final views look completely identical?",
+          "question": "Ignoring the change in viewing direction, is the table otherwise identical in the first and second views?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "same_object_color_change_60",
-          "question": "Did the {reference_object} change color?",
+          "question": "Did the other object change color?",
           "answer": "No.",
-          "required_variables": [
-            "reference_object"
-          ],
+          "required_variables": [],
           "answer_style": "yes_no"
         }
       ]
@@ -1731,7 +1724,7 @@
       "templates": [
         {
           "template_id": "distance_increase_01",
-          "question": "What changed during the video?",
+          "question": "What changed in the tabletop scene itself?",
           "answer": "The distance between the {object_a} and the {object_b} increased.",
           "required_variables": [
             "object_a",
@@ -1761,8 +1754,8 @@
         },
         {
           "template_id": "distance_increase_04",
-          "question": "Were the {object_a} and the {object_b} closer at the beginning or at the end?",
-          "answer": "They were closer at the beginning.",
+          "question": "Which view shows the {object_a} and the {object_b} closer together?",
+          "answer": "The first view shows them closer together.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -1771,8 +1764,8 @@
         },
         {
           "template_id": "distance_increase_05",
-          "question": "What was the final spatial relationship between the {object_a} and the {object_b}?",
-          "answer": "They were farther apart at the end.",
+          "question": "What is the spatial relationship between the {object_a} and the {object_b} in the second view?",
+          "answer": "They are farther apart in the second view.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -1781,8 +1774,8 @@
         },
         {
           "template_id": "distance_increase_06",
-          "question": "What was the initial spatial relationship between the {object_a} and the {object_b}?",
-          "answer": "They were closer together.",
+          "question": "What was the spatial relationship between the {object_a} and the {object_b} in the first view?",
+          "answer": "They were closer together in the first view.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -1791,8 +1784,8 @@
         },
         {
           "template_id": "distance_increase_07",
-          "question": "What was the spatial relationship between the {object_a} and the {object_b} after the change?",
-          "answer": "The {object_a} and the {object_b} were farther apart.",
+          "question": "How far apart are the {object_a} and the {object_b} in the second view?",
+          "answer": "The {object_a} and the {object_b} are farther apart.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -1819,40 +1812,40 @@
         {
           "template_id": "distance_increase_10",
           "question": "Where was the {object_a} before the change?",
-          "answer": "It was at {initial_position_a}.",
+          "answer": "It was on {initial_position_a}.",
           "required_variables": [
-            "initial_position_a",
-            "object_a"
+            "object_a",
+            "initial_position_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_11",
-          "question": "Where was the {object_a} after the change?",
-          "answer": "It was at {final_position_a}.",
+          "question": "Where is the {object_a} after the change?",
+          "answer": "It moves toward {final_position_a}.",
           "required_variables": [
-            "final_position_a",
-            "object_a"
+            "object_a",
+            "final_position_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_12",
           "question": "Where was the {object_b} before the change?",
-          "answer": "It was at {initial_position_b}.",
+          "answer": "It was on {initial_position_b}.",
           "required_variables": [
-            "initial_position_b",
-            "object_b"
+            "object_b",
+            "initial_position_b"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_13",
-          "question": "Where was the {object_b} after the change?",
-          "answer": "It was at {final_position_b}.",
+          "question": "Where is the {object_b} after the change?",
+          "answer": "It moves toward {final_position_b}.",
           "required_variables": [
-            "final_position_b",
-            "object_b"
+            "object_b",
+            "final_position_b"
           ],
           "answer_style": "descriptive"
         },
@@ -1861,9 +1854,9 @@
           "question": "How did the {object_a}'s position change?",
           "answer": "It moved from {initial_position_a} to {final_position_a}.",
           "required_variables": [
-            "final_position_a",
+            "object_a",
             "initial_position_a",
-            "object_a"
+            "final_position_a"
           ],
           "answer_style": "descriptive"
         },
@@ -1872,9 +1865,9 @@
           "question": "How did the {object_b}'s position change?",
           "answer": "It moved from {initial_position_b} to {final_position_b}.",
           "required_variables": [
-            "final_position_b",
+            "object_b",
             "initial_position_b",
-            "object_b"
+            "final_position_b"
           ],
           "answer_style": "descriptive"
         },
@@ -1887,15 +1880,15 @@
         },
         {
           "template_id": "distance_increase_17",
-          "question": "Did either object disappear?",
-          "answer": "Both objects remained visible; only their spacing changed.",
+          "question": "Does either object disappear?",
+          "answer": "No. Both objects remain visible; only their spacing changes.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_18",
-          "question": "Were any objects replaced?",
-          "answer": "The same two objects remained; only their positions changed.",
+          "question": "Is either object replaced?",
+          "answer": "No. The same two objects remain; only their positions change.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -1908,8 +1901,8 @@
         },
         {
           "template_id": "distance_increase_20",
-          "question": "How many objects were present at the beginning?",
-          "answer": "There were {initial_count} objects.",
+          "question": "How many objects were present in the first view?",
+          "answer": "There were {initial_count} objects in the first view.",
           "required_variables": [
             "initial_count"
           ],
@@ -1917,8 +1910,8 @@
         },
         {
           "template_id": "distance_increase_21",
-          "question": "How many objects were present at the end?",
-          "answer": "There were {final_count} objects.",
+          "question": "How many objects are present in the second view?",
+          "answer": "There are {final_count} objects in the second view.",
           "required_variables": [
             "final_count"
           ],
@@ -1926,8 +1919,8 @@
         },
         {
           "template_id": "distance_increase_22",
-          "question": "How did the object count change?",
-          "answer": "The object count remained {final_count}.",
+          "question": "How does the object count compare between the first and second views?",
+          "answer": "The object count remains {final_count}.",
           "required_variables": [
             "final_count"
           ],
@@ -1935,8 +1928,8 @@
         },
         {
           "template_id": "distance_increase_23",
-          "question": "What is the main difference between the first and last views?",
-          "answer": "The {object_a} and the {object_b} are farther apart in the last view.",
+          "question": "Ignoring the change in viewing side, what is the main difference between the first and second views toward the table?",
+          "answer": "The {object_a} and the {object_b} are farther apart in the second view.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -1965,8 +1958,8 @@
         },
         {
           "template_id": "distance_increase_26",
-          "question": "Was the gap larger before or after the camera returned?",
-          "answer": "The gap was larger after the camera returned.",
+          "question": "In which view is the spacing between the objects larger: the first view toward the table or the second view toward the table?",
+          "answer": "The spacing is larger in the second view toward the table.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -1979,8 +1972,8 @@
         },
         {
           "template_id": "distance_increase_28",
-          "question": "What remained unchanged despite the movement?",
-          "answer": "The identities, colors, and shapes of both objects remained unchanged.",
+          "question": "What remains unchanged despite the movement?",
+          "answer": "The identities, colors, and shapes of both objects remain unchanged.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -1996,21 +1989,21 @@
         },
         {
           "template_id": "distance_increase_30",
-          "question": "How did the {object_a} move relative to the {object_b}?",
-          "answer": "The {object_a} moved farther to the left of the {object_b}.",
+          "question": "Where is the {object_a} in the second view after the distance increases?",
+          "answer": "It moves farther toward {final_position_a}.",
           "required_variables": [
             "object_a",
-            "object_b"
+            "final_position_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_31",
-          "question": "How did the {object_b} move relative to the {object_a}?",
-          "answer": "The {object_b} moved farther to the right of the {object_a}.",
+          "question": "Where is the {object_b} in the second view after the distance increases?",
+          "answer": "It moves farther toward {final_position_b}.",
           "required_variables": [
-            "object_a",
-            "object_b"
+            "object_b",
+            "final_position_b"
           ],
           "answer_style": "descriptive"
         },
@@ -2030,59 +2023,61 @@
         },
         {
           "template_id": "distance_increase_34",
-          "question": "What is the final placement of the {object_a} relative to the {object_b}?",
-          "answer": "The {object_a} is farther to the left of the {object_b}.",
+          "question": "What is the position in the second view of the {object_a}?",
+          "answer": "It moves farther toward {final_position_a}.",
           "required_variables": [
             "object_a",
-            "object_b"
+            "final_position_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_35",
-          "question": "What is the final placement of the {object_b} relative to the {object_a}?",
-          "answer": "The {object_b} is farther to the right of the {object_a}.",
+          "question": "What is the position in the second view of the {object_b}?",
+          "answer": "It moves farther toward {final_position_b}.",
           "required_variables": [
-            "object_a",
-            "object_b"
+            "object_b",
+            "final_position_b"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_36",
-          "question": "What spatial property changed without changing the objects themselves?",
-          "answer": "The distance between the two objects changed.",
+          "question": "Which spatial property of the objects changes?",
+          "answer": "The distance between the two objects changes.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_37",
-          "question": "Were any other objects involved in the change?",
-          "answer": "No other objects were involved.",
+          "question": "Are any other objects involved in the change?",
+          "answer": "No. No other objects are involved.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_38",
-          "question": "Did the two objects exchange places?",
-          "answer": "They did not exchange places; they moved farther apart.",
+          "question": "Do the two objects exchange places?",
+          "answer": "No. They move farther apart without exchanging places.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_39",
-          "question": "Summarize the movement.",
-          "answer": "The {object_a} moved leftward and the {object_b} moved rightward, increasing the distance between them.",
+          "question": "Summarize the placement in the second view of the two objects.",
+          "answer": "The {object_a} moves farther toward {final_position_a}, and the {object_b} moves farther toward {final_position_b}.",
           "required_variables": [
             "object_a",
-            "object_b"
+            "final_position_a",
+            "object_b",
+            "final_position_b"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "distance_increase_40",
-          "question": "Describe the final scene relative to the initial scene.",
-          "answer": "The same two objects remain on the table, but they are farther apart.",
+          "question": "How does the second view compare with the first view?",
+          "answer": "The same two objects remain on the table, but they are farther apart in the second view.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -2115,53 +2110,55 @@
         },
         {
           "template_id": "distance_increase_44",
-          "question": "Did both objects remain visible after the change?",
+          "question": "Are both objects still visible in the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_45",
-          "question": "Did the identities of both objects remain the same?",
+          "question": "Do both objects keep the same identities?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_46",
-          "question": "Did the total object count remain the same?",
+          "question": "Does the total object count stay the same between the first and second views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_47",
-          "question": "Did the {object_a} move farther toward the left side?",
+          "question": "Does the {object_a} eventually move farther toward {final_position_a}?",
           "answer": "Yes.",
           "required_variables": [
-            "object_a"
+            "object_a",
+            "final_position_a"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_48",
-          "question": "Did the {object_b} move farther toward the right side?",
+          "question": "Does the {object_b} eventually move farther toward {final_position_b}?",
           "answer": "Yes.",
           "required_variables": [
-            "object_b"
+            "object_b",
+            "final_position_b"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_49",
-          "question": "Was the final gap larger than the initial gap?",
+          "question": "Is the gap larger in the second view than in the first view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_50",
-          "question": "Was spacing the main property that changed?",
+          "question": "Is the main difference between the first and second views the spacing between the objects?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -2220,25 +2217,24 @@
         },
         {
           "template_id": "distance_increase_58",
-          "question": "Did the tabletop scene remain unchanged?",
+          "question": "Does the tabletop scene remain unchanged?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_59",
-          "question": "Was the final gap smaller than the initial gap?",
+          "question": "Is the gap smaller in the second view than in the first view?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "distance_increase_60",
-          "question": "Did the {object_a} end up to the right of the {object_b}?",
+          "question": "Is the {object_a} eventually on the left side of the table in the second view?",
           "answer": "No.",
           "required_variables": [
-            "object_a",
-            "object_b"
+            "object_a"
           ],
           "answer_style": "yes_no"
         }
@@ -2251,8 +2247,8 @@
       "templates": [
         {
           "template_id": "swap_positions_01",
-          "question": "What changed during the video?",
-          "answer": "The {object_a} and the {object_b} swapped positions.",
+          "question": "What changed in the tabletop scene itself?",
+          "answer": "The {object_a} and the {object_b} swapped physical positions.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -2272,67 +2268,67 @@
         {
           "template_id": "swap_positions_03",
           "question": "Where was the {object_a} at the beginning?",
-          "answer": "The {object_a} was at {position_a}.",
+          "answer": "The {object_a} was on {object_a_initial_position}.",
           "required_variables": [
             "object_a",
-            "position_a"
+            "object_a_initial_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_04",
-          "question": "Where was the {object_a} at the end?",
-          "answer": "The {object_a} was at {position_b}.",
+          "question": "Where is the {object_a} at the end?",
+          "answer": "The {object_a} is on {object_a_final_position}.",
           "required_variables": [
             "object_a",
-            "position_b"
+            "object_a_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_05",
           "question": "Where was the {object_b} at the beginning?",
-          "answer": "The {object_b} was at {position_b}.",
+          "answer": "The {object_b} was on {object_b_initial_position}.",
           "required_variables": [
             "object_b",
-            "position_b"
+            "object_b_initial_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_06",
-          "question": "Where was the {object_b} at the end?",
-          "answer": "The {object_b} was at {position_a}.",
+          "question": "Where is the {object_b} at the end?",
+          "answer": "The {object_b} is on {object_b_final_position}.",
           "required_variables": [
             "object_b",
-            "position_a"
+            "object_b_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_07",
-          "question": "What object moved to {position_a}?",
-          "answer": "The {object_b} moved to {position_a}.",
+          "question": "Which object has moved to {object_b_final_position}?",
+          "answer": "The {object_b} has moved there.",
           "required_variables": [
-            "object_b",
-            "position_a"
+            "object_b_final_position",
+            "object_b"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_08",
-          "question": "What object moved to {position_b}?",
-          "answer": "The {object_a} moved to {position_b}.",
+          "question": "Which object has moved to {object_a_final_position}?",
+          "answer": "The {object_a} has moved there.",
           "required_variables": [
-            "object_a",
-            "position_b"
+            "object_a_final_position",
+            "object_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_09",
-          "question": "Which object took the original place of the {object_a}?",
-          "answer": "The {object_b} took its original place.",
+          "question": "Which object occupies the {object_a}'s original position in the second view?",
+          "answer": "The {object_b} occupies that position.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -2341,37 +2337,37 @@
         },
         {
           "template_id": "swap_positions_10",
-          "question": "Which object took the original place of the {object_b}?",
-          "answer": "The {object_a} took its original place.",
+          "question": "Which object occupies the {object_b}'s original position in the second view?",
+          "answer": "The {object_a} occupies that position.",
           "required_variables": [
-            "object_a",
-            "object_b"
+            "object_b",
+            "object_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_11",
           "question": "Describe the position exchange.",
-          "answer": "The {object_a} moved to {position_b}, and the {object_b} moved to {position_a}.",
+          "answer": "Both objects moved to the other side of the table. The {object_a} is eventually on {object_a_final_position}, and the {object_b} is eventually on {object_b_final_position}.",
           "required_variables": [
             "object_a",
+            "object_a_final_position",
             "object_b",
-            "position_a",
-            "position_b"
+            "object_b_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_12",
-          "question": "Did either object disappear?",
-          "answer": "Both objects remained visible and exchanged positions.",
+          "question": "Are both objects still visible in the second view?",
+          "answer": "Yes. Both objects are visible and have exchanged positions.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_13",
-          "question": "Were any objects replaced?",
-          "answer": "No objects were replaced; the two objects swapped positions.",
+          "question": "Is either object replaced?",
+          "answer": "No. The same two objects remain and swap positions.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -2384,8 +2380,8 @@
         },
         {
           "template_id": "swap_positions_15",
-          "question": "How many objects were present at the beginning?",
-          "answer": "There were {initial_count} objects.",
+          "question": "How many objects were present in the first view?",
+          "answer": "There were {initial_count} objects in the first view.",
           "required_variables": [
             "initial_count"
           ],
@@ -2393,8 +2389,8 @@
         },
         {
           "template_id": "swap_positions_16",
-          "question": "How many objects were present at the end?",
-          "answer": "There were {final_count} objects.",
+          "question": "How many objects are present in the second view?",
+          "answer": "There are {final_count} objects in the second view.",
           "required_variables": [
             "final_count"
           ],
@@ -2402,8 +2398,8 @@
         },
         {
           "template_id": "swap_positions_17",
-          "question": "How did the object count change?",
-          "answer": "The object count remained {final_count}.",
+          "question": "How does the object count compare between the first and second views?",
+          "answer": "The object count remains {final_count}.",
           "required_variables": [
             "final_count"
           ],
@@ -2411,8 +2407,8 @@
         },
         {
           "template_id": "swap_positions_18",
-          "question": "What is the main difference between the first and last views?",
-          "answer": "The {object_a} and the {object_b} are in each other's original positions.",
+          "question": "Ignoring the change in viewing side, what is the main difference between the first and second views toward the table?",
+          "answer": "The {object_a} and the {object_b} occupy each other's original positions.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -2421,99 +2417,97 @@
         },
         {
           "template_id": "swap_positions_19",
-          "question": "Which object is now at {position_a}?",
-          "answer": "The {object_b} is now at {position_a}.",
+          "question": "Which object is now on {object_b_final_position}?",
+          "answer": "The {object_b} is there.",
           "required_variables": [
-            "object_b",
-            "position_a"
+            "object_b_final_position",
+            "object_b"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_20",
-          "question": "Which object is now at {position_b}?",
-          "answer": "The {object_a} is now at {position_b}.",
+          "question": "Which object is now on {object_a_final_position}?",
+          "answer": "The {object_a} is there.",
           "required_variables": [
-            "object_a",
-            "position_b"
+            "object_a_final_position",
+            "object_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_21",
-          "question": "Which object was originally at {position_a}?",
-          "answer": "The {object_a} was originally at {position_a}.",
+          "question": "Which object was originally on {object_a_initial_position}?",
+          "answer": "The {object_a} was there.",
           "required_variables": [
-            "object_a",
-            "position_a"
+            "object_a_initial_position",
+            "object_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_22",
-          "question": "Which object was originally at {position_b}?",
-          "answer": "The {object_b} was originally at {position_b}.",
+          "question": "Which object was originally on {object_b_initial_position}?",
+          "answer": "The {object_b} was there.",
           "required_variables": [
-            "object_b",
-            "position_b"
+            "object_b_initial_position",
+            "object_b"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_23",
-          "question": "How can the swap be confirmed?",
-          "answer": "Each object appears in the other's original position.",
+          "question": "How is the swap evident in the second view?",
+          "answer": "Each object occupies the other's original physical position.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_24",
-          "question": "Which object moved from {position_a} to {position_b}?",
-          "answer": "The {object_a} moved from {position_a} to {position_b}.",
+          "question": "Which object moved from {object_a_initial_position} to the other side of the table?",
+          "answer": "The {object_a} moved to the other side of the table and ended on {object_a_final_position}.",
           "required_variables": [
+            "object_a_initial_position",
             "object_a",
-            "position_a",
-            "position_b"
+            "object_a_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_25",
-          "question": "Which object moved from {position_b} to {position_a}?",
-          "answer": "The {object_b} moved from {position_b} to {position_a}.",
+          "question": "Which object moved from {object_b_initial_position} to the other side of the table?",
+          "answer": "The {object_b} moved to the other side of the table and ended on {object_b_final_position}.",
           "required_variables": [
+            "object_b_initial_position",
             "object_b",
-            "position_a",
-            "position_b"
+            "object_b_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_26",
           "question": "What happened to the {object_a}'s location?",
-          "answer": "It changed from {position_a} to {position_b}.",
+          "answer": "It moved to the other side of the table and ended on {object_a_final_position}.",
           "required_variables": [
             "object_a",
-            "position_a",
-            "position_b"
+            "object_a_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_27",
           "question": "What happened to the {object_b}'s location?",
-          "answer": "It changed from {position_b} to {position_a}.",
+          "answer": "It moved to the other side of the table and ended on {object_b_final_position}.",
           "required_variables": [
             "object_b",
-            "position_a",
-            "position_b"
+            "object_b_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_28",
-          "question": "What stayed unchanged during the swap?",
-          "answer": "The object identities, colors, and total count stayed unchanged.",
+          "question": "What remains unchanged during the swap?",
+          "answer": "The object identities, colors, and total count remain unchanged.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -2536,8 +2530,8 @@
         },
         {
           "template_id": "swap_positions_31",
-          "question": "What would need to happen to restore the first view?",
-          "answer": "The {object_a} and the {object_b} would need to swap back.",
+          "question": "What would need to happen to recreate the first view toward the table?",
+          "answer": "The {object_a} and the {object_b} would need to swap physical positions again.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -2546,28 +2540,28 @@
         },
         {
           "template_id": "swap_positions_32",
-          "question": "Where should the {object_a} move to restore the original arrangement?",
-          "answer": "It should return to {position_a}.",
+          "question": "Where should the {object_a} move to restore the initial arrangement?",
+          "answer": "It should move to the other side of the table and return to {object_a_initial_position}.",
           "required_variables": [
             "object_a",
-            "position_a"
+            "object_a_initial_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_33",
-          "question": "Where should the {object_b} move to restore the original arrangement?",
-          "answer": "It should return to {position_b}.",
+          "question": "Where should the {object_b} move to restore the initial arrangement?",
+          "answer": "It should move to the other side of the table and return to {object_b_initial_position}.",
           "required_variables": [
             "object_b",
-            "position_b"
+            "object_b_initial_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_34",
-          "question": "Which object ended at the {object_a}'s starting location?",
-          "answer": "The {object_b} ended there.",
+          "question": "Which object is in the {object_a}'s original position in the second view?",
+          "answer": "The {object_b} is there.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -2576,51 +2570,51 @@
         },
         {
           "template_id": "swap_positions_35",
-          "question": "Which object ended at the {object_b}'s starting location?",
-          "answer": "The {object_a} ended there.",
+          "question": "Which object is in the {object_b}'s original position in the second view?",
+          "answer": "The {object_a} is there.",
           "required_variables": [
-            "object_a",
-            "object_b"
+            "object_b",
+            "object_a"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_36",
-          "question": "Did the distance between the two objects change after they swapped positions?",
-          "answer": "No. The distance remained unchanged; the main change was that the two objects swapped positions.",
+          "question": "Does the distance between the two objects change when they swap physical positions?",
+          "answer": "No. The distance remains unchanged; the main change is the position swap.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_37",
-          "question": "What spatial relationship changed?",
-          "answer": "The two objects reversed their locations.",
+          "question": "How does the spatial relationship between the two objects change from the first view toward the table to the second view toward the table?",
+          "answer": "Their positions are reversed.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_38",
-          "question": "Apart from the position swap, did anything else change?",
-          "answer": "No. Apart from the position swap, nothing else changed.",
+          "question": "Apart from the physical position swap, does anything else on the tabletop change?",
+          "answer": "No. Apart from the position swap, the rest of the tabletop scene remains unchanged.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_39",
-          "question": "Summarize the final arrangement.",
-          "answer": "The {object_a} is at {position_b}, and the {object_b} is at {position_a}.",
+          "question": "Summarize the arrangement in the second view.",
+          "answer": "The {object_a} is on {object_a_final_position}, and the {object_b} is on {object_b_final_position}.",
           "required_variables": [
             "object_a",
+            "object_a_final_position",
             "object_b",
-            "position_a",
-            "position_b"
+            "object_b_final_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "swap_positions_40",
-          "question": "Describe the final scene relative to the initial scene.",
-          "answer": "Everything is unchanged except that the {object_a} and the {object_b} have swapped positions.",
+          "question": "Compared with the first view toward the table, describe the second view toward the table.",
+          "answer": "Apart from the opposite viewing side, the {object_a} and the {object_b} have swapped positions in the second view toward the table.",
           "required_variables": [
             "object_a",
             "object_b"
@@ -2639,43 +2633,41 @@
         },
         {
           "template_id": "swap_positions_42",
-          "question": "Did both objects remain visible after the swap?",
+          "question": "Are both objects visible in the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_43",
-          "question": "Did the total number of objects remain the same?",
+          "question": "Does the total number of objects stay the same between the first and second views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_44",
-          "question": "Did the {object_a} move from {position_a} to {position_b}?",
+          "question": "Did the {object_a} move from {object_a_initial_position} to the other side of the table?",
           "answer": "Yes.",
           "required_variables": [
             "object_a",
-            "position_a",
-            "position_b"
+            "object_a_initial_position"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_45",
-          "question": "Did the {object_b} move from {position_b} to {position_a}?",
+          "question": "Did the {object_b} move from {object_b_initial_position} to the other side of the table?",
           "answer": "Yes.",
           "required_variables": [
             "object_b",
-            "position_a",
-            "position_b"
+            "object_b_initial_position"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_46",
-          "question": "Did each object occupy the other's original position?",
+          "question": "Does each object occupy the other's original physical position?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -2689,21 +2681,21 @@
         },
         {
           "template_id": "swap_positions_48",
-          "question": "Did the tabletop arrangement change?",
+          "question": "Does the tabletop arrangement change?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_49",
-          "question": "Were the two original positions reversed?",
+          "question": "Are the two original physical positions reversed in the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_50",
-          "question": "Did the identities of both objects remain unchanged?",
+          "question": "Do both objects keep the same identities?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -2738,21 +2730,19 @@
         },
         {
           "template_id": "swap_positions_55",
-          "question": "Did the {object_a} remain at {position_a}?",
+          "question": "Does the {object_a} remain in its original physical position?",
           "answer": "No.",
           "required_variables": [
-            "object_a",
-            "position_a"
+            "object_a"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "swap_positions_56",
-          "question": "Did the {object_b} remain at {position_b}?",
+          "question": "Does the {object_b} remain in its original physical position?",
           "answer": "No.",
           "required_variables": [
-            "object_b",
-            "position_b"
+            "object_b"
           ],
           "answer_style": "yes_no"
         },
@@ -2772,7 +2762,7 @@
         },
         {
           "template_id": "swap_positions_59",
-          "question": "Did the entire tabletop scene remain unchanged?",
+          "question": "Does the entire tabletop scene remain unchanged?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -2793,50 +2783,50 @@
       "templates": [
         {
           "template_id": "no_change_01",
-          "question": "What changed during the video?",
-          "answer": "Nothing changed.",
+          "question": "What change occurs on the table?",
+          "answer": "Nothing on the table has changed; only the camera moved to the opposite side of the table.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_02",
-          "question": "Describe the final scene relative to the initial scene.",
-          "answer": "The final scene matches the initial scene.",
+          "question": "How does the second view toward the table compare with the first view toward the table?",
+          "answer": "Although the table is viewed from the opposite side, the second view toward the table shows the same objects in the same physical positions as the first view toward the table.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_03",
-          "question": "Were any objects added or removed?",
-          "answer": "All objects remained present.",
+          "question": "Are any objects added or removed?",
+          "answer": "No. All original objects are still present in the second view.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_04",
-          "question": "Were any objects replaced?",
-          "answer": "No object was replaced.",
+          "question": "Is any object replaced?",
+          "answer": "No. The same objects remain in both views.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_05",
-          "question": "Was there any color change in the scene?",
-          "answer": "Every object kept its original color.",
+          "question": "Does any object's color or appearance change?",
+          "answer": "No. Every object has the same color or appearance in both views.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_06",
-          "question": "Did any object move?",
-          "answer": "Every object stayed in its original position.",
+          "question": "Does any object move to a different physical position?",
+          "answer": "No. Every object remains in the same physical position.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_07",
-          "question": "How many objects were present at the beginning?",
-          "answer": "There were {initial_count} objects.",
+          "question": "How many objects were present in the first view?",
+          "answer": "There were {initial_count} objects in the first view.",
           "required_variables": [
             "initial_count"
           ],
@@ -2844,8 +2834,8 @@
         },
         {
           "template_id": "no_change_08",
-          "question": "How many objects were present at the end?",
-          "answer": "There were {final_count} objects.",
+          "question": "How many objects are present in the second view?",
+          "answer": "There are {final_count} objects in the second view.",
           "required_variables": [
             "final_count"
           ],
@@ -2853,8 +2843,8 @@
         },
         {
           "template_id": "no_change_09",
-          "question": "How did the object count change?",
-          "answer": "The object count remained {final_count}.",
+          "question": "How does the object count compare between the first and second views?",
+          "answer": "The object count remains {final_count}.",
           "required_variables": [
             "final_count"
           ],
@@ -2862,8 +2852,8 @@
         },
         {
           "template_id": "no_change_10",
-          "question": "Which objects remained on the table?",
-          "answer": "{final_object_list} remained on the table.",
+          "question": "Which objects are on the table in the second view?",
+          "answer": "{final_object_list} are on the table in the second view.",
           "required_variables": [
             "final_object_list"
           ],
@@ -2871,68 +2861,66 @@
         },
         {
           "template_id": "no_change_11",
-          "question": "What was at {selected_position} at the beginning?",
-          "answer": "The {selected_object} was at {selected_position}.",
+          "question": "What was on {initial_selected_position} at the beginning?",
+          "answer": "The {selected_object} was there.",
           "required_variables": [
-            "selected_object",
-            "selected_position"
+            "initial_selected_position",
+            "selected_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_12",
-          "question": "What was at {selected_position} at the end?",
-          "answer": "The {selected_object} was still at {selected_position}.",
+          "question": "What is on {final_selected_position} at the end?",
+          "answer": "The {selected_object} is there.",
           "required_variables": [
-            "selected_object",
-            "selected_position"
+            "final_selected_position",
+            "selected_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_13",
           "question": "Where was the {selected_object} at the beginning?",
-          "answer": "It was at {selected_position}.",
+          "answer": "It was on {initial_selected_position}.",
           "required_variables": [
             "selected_object",
-            "selected_position"
+            "initial_selected_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_14",
-          "question": "Where was the {selected_object} at the end?",
-          "answer": "It remained at {selected_position}.",
+          "question": "Where is the {selected_object} at the end?",
+          "answer": "It is on {final_selected_position}.",
           "required_variables": [
             "selected_object",
-            "selected_position"
+            "final_selected_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_15",
-          "question": "What color was the {selected_object} at the beginning?",
-          "answer": "It was {selected_color}.",
+          "question": "What was true about the {selected_object}'s color or appearance in the first view?",
+          "answer": "It had its original color or appearance.",
           "required_variables": [
-            "selected_color",
             "selected_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_16",
-          "question": "What color was the {selected_object} at the end?",
-          "answer": "It remained {selected_color}.",
+          "question": "What is true about the {selected_object}'s color or appearance in the second view?",
+          "answer": "It has the same color or appearance as in the first view.",
           "required_variables": [
-            "selected_color",
             "selected_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_17",
-          "question": "What happened to the {selected_object}?",
-          "answer": "It remained unchanged.",
+          "question": "What happens to the {selected_object}?",
+          "answer": "It remains unchanged.",
           "required_variables": [
             "selected_object"
           ],
@@ -2940,100 +2928,98 @@
         },
         {
           "template_id": "no_change_18",
-          "question": "Which object was {relative_position} the {reference_object} at the beginning?",
-          "answer": "The {selected_object} was {relative_position} the {reference_object}.",
+          "question": "Which object was on {initial_selected_position} at the first view toward the table?",
+          "answer": "The {selected_object} was there.",
           "required_variables": [
-            "reference_object",
-            "relative_position",
+            "initial_selected_position",
             "selected_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_19",
-          "question": "Which object was {relative_position} the {reference_object} at the end?",
-          "answer": "The {selected_object} remained {relative_position} the {reference_object}.",
+          "question": "Which object is on {final_selected_position} at the end?",
+          "answer": "The {selected_object} is there and has not moved to another physical place.",
           "required_variables": [
-            "reference_object",
-            "relative_position",
+            "final_selected_position",
             "selected_object"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_20",
-          "question": "Did the arrangement stay consistent?",
-          "answer": "The tabletop arrangement stayed consistent.",
+          "question": "Does the tabletop arrangement remain consistent between the two views?",
+          "answer": "Yes. The tabletop arrangement remains consistent.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_21",
-          "question": "What is the main difference between the first and last views?",
-          "answer": "There is no visible difference.",
+          "question": "Why do the first view toward the table and the second view toward the table look different?",
+          "answer": "The camera views the table from the opposite side in the second view, while the objects, colors or appearances, count, and physical positions remain unchanged.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_22",
-          "question": "How can the final frame be described?",
-          "answer": "It shows the same objects in the same positions as the first frame.",
+          "question": "How should the second view toward the table be described?",
+          "answer": "It shows the same objects in the same positions. Their apparent side-to-side order is reversed because the camera is now on the other side of the table.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_23",
-          "question": "Which item disappeared?",
-          "answer": "No item disappeared.",
+          "question": "Which item is missing in the second view?",
+          "answer": "No item is missing.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_24",
-          "question": "Which new item appeared?",
-          "answer": "No new item appeared.",
+          "question": "Which new item is visible in the second view?",
+          "answer": "No new item is visible.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_25",
-          "question": "Which object changed its identity?",
-          "answer": "No object changed its identity.",
+          "question": "Which object changes identity?",
+          "answer": "No object changes identity.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_26",
-          "question": "Which object changed its position?",
-          "answer": "No object changed its position.",
+          "question": "Which object changes its physical position?",
+          "answer": "No object changes its physical position.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_27",
-          "question": "Which object changed its appearance?",
-          "answer": "No object changed its appearance.",
+          "question": "Which object changes its appearance?",
+          "answer": "No object changes its appearance.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_28",
-          "question": "Did the spacing between objects change?",
-          "answer": "The spacing between the objects remained the same.",
+          "question": "Does the spacing between the objects change?",
+          "answer": "No. The spacing between the objects remains the same.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_29",
-          "question": "Was there any position swap between the objects?",
-          "answer": "No pair of objects swapped positions.",
+          "question": "Do any two objects swap physical positions?",
+          "answer": "No. No pair of objects swaps positions.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_30",
-          "question": "Was the {selected_object} still visible at the end?",
-          "answer": "The {selected_object} remained visible.",
+          "question": "Is the {selected_object} still visible in the second view?",
+          "answer": "The {selected_object} is still visible in the second view.",
           "required_variables": [
             "selected_object"
           ],
@@ -3041,8 +3027,8 @@
         },
         {
           "template_id": "no_change_31",
-          "question": "What remained unchanged about the scene?",
-          "answer": "The objects, colors, positions, and count all remained unchanged.",
+          "question": "What remains unchanged on the tabletop?",
+          "answer": "The objects, colors or appearances, physical positions, and total count all remain unchanged.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -3076,34 +3062,33 @@
         },
         {
           "template_id": "no_change_36",
-          "question": "What should a viewer conclude after comparing the first and last frames?",
-          "answer": "The scene did not change.",
+          "question": "What should a viewer conclude after comparing the initial view with the second view?",
+          "answer": "The viewing side changed, but the objects on the table did not.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_37",
-          "question": "Did the final tabletop state match the initial state after the camera returned?",
-          "answer": "Yes. The final tabletop state matched the initial state.",
+          "question": "Does the second view toward the table match the first view toward the table?",
+          "answer": "Yes. The second view toward the table shows the same objects in the same physical positions as the first view toward the table.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_38",
-          "question": "What is the final position of the {selected_object}?",
-          "answer": "Its final position is {selected_position}, the same as before.",
+          "question": "What is the position in the second view of the {selected_object}?",
+          "answer": "It is on {final_selected_position}.",
           "required_variables": [
             "selected_object",
-            "selected_position"
+            "final_selected_position"
           ],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_39",
-          "question": "What is the final color of the {selected_object}?",
-          "answer": "Its final color is {selected_color}, the same as before.",
+          "question": "What is the {selected_object}'s color or appearance in the second view?",
+          "answer": "Its color or appearance is the same as it was in the first view.",
           "required_variables": [
-            "selected_color",
             "selected_object"
           ],
           "answer_style": "descriptive"
@@ -3111,48 +3096,48 @@
         {
           "template_id": "no_change_40",
           "question": "Summarize the video outcome.",
-          "answer": "The camera returned to an unchanged tabletop scene.",
+          "answer": "After the camera moves to the opposite side, the second view toward the table still shows the same objects in the same physical positions as the first view toward the table.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
         {
           "template_id": "no_change_41",
-          "question": "Did the final scene match the initial scene?",
+          "question": "Are the object positions the same in the first view toward the table and the second view toward the table?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_42",
-          "question": "Did all objects remain on the table?",
+          "question": "Are all original objects still on the table in the second view?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_43",
-          "question": "Did the total object count remain the same?",
+          "question": "Does the total object count stay the same between the first and second views?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_44",
-          "question": "Did every object stay in its original position?",
+          "question": "Does every object remain in the same physical position?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_45",
-          "question": "Did every object keep its original identity?",
+          "question": "Does every object keep the same identity?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_46",
-          "question": "Did the {selected_object} remain visible at the end?",
+          "question": "Does the {selected_object} remain visible in the second view?",
           "answer": "Yes.",
           "required_variables": [
             "selected_object"
@@ -3161,40 +3146,37 @@
         },
         {
           "template_id": "no_change_47",
-          "question": "Did the {selected_object} remain at {selected_position}?",
+          "question": "Did the {selected_object} remain in the same physical place?",
           "answer": "Yes.",
           "required_variables": [
-            "selected_object",
-            "selected_position"
+            "selected_object"
           ],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_48",
-          "question": "Did the tabletop arrangement remain unchanged?",
+          "question": "Does the tabletop arrangement remain unchanged?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_49",
-          "question": "Were the initial and final views visually consistent?",
+          "question": "Do the object colors remain unchanged between the first view toward the table and the second view toward the table?",
           "answer": "Yes.",
           "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_50",
-          "question": "Did the {reference_object} remain unchanged?",
+          "question": "Does the other object remain unchanged?",
           "answer": "Yes.",
-          "required_variables": [
-            "reference_object"
-          ],
+          "required_variables": [],
           "answer_style": "yes_no"
         },
         {
           "template_id": "no_change_51",
-          "question": "Did anything change during the video?",
+          "question": "Did any tabletop object, color or appearance, count, or physical position change during the video?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -3222,7 +3204,7 @@
         },
         {
           "template_id": "no_change_55",
-          "question": "Was any object's color different in the final scene?",
+          "question": "Is any object's color or appearance different in the second view from the first view?",
           "answer": "No.",
           "required_variables": [],
           "answer_style": "yes_no"
@@ -3266,8 +3248,5 @@
         }
       ]
     }
-  ],
-  "templates_per_change_type": 60,
-  "content_revision": "user-chinese-reviewed-2026-07-23",
-  "sampling_salt": 1
+  ]
 }

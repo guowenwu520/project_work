@@ -210,114 +210,120 @@ def build_context(
 ) -> dict[str, str]:
     context: dict[str, str] = {}
 
+    def put(key: str, value: Any) -> None:
+        text = str(value or "").strip()
+        if key and text:
+            context[key] = text
+
+    def left_first() -> str:
+        return "the left side of the table in the first view"
+
+    def right_first() -> str:
+        return "the right side of the table in the first view"
+
+    def left_second() -> str:
+        return "the left side of the table in the second view"
+
+    def right_second() -> str:
+        return "the right side of the table in the second view"
+
+    put("initial_count", "2")
+    put("final_count", "2")
+
     left_before = annotation.get("leftBefore") or {}
     right_before = annotation.get("rightBefore") or {}
     left_after = annotation.get("leftAfter") or {}
     right_after = annotation.get("rightAfter") or {}
-    change_type = normalize_change_type(annotation.get("changeType"))
-    changed_slot = annotation.get("changedSlot")
 
-    left_position = "the left side of the table"
-    right_position = "the right side of the table"
-
-    put(context, "initial_count", "2")
-    put(context, "final_count", "2")
-    put(context, "position_a", left_position)
-    put(context, "position_b", right_position)
-    put(context, "position_1", left_position)
-    put(context, "position_2", right_position)
-    put(context, "object_a", state_description(left_before))
-    put(context, "object_b", state_description(right_before))
+    put("object_a", state_description(left_before))
+    put("object_b", state_description(right_before))
     put(
-        context,
         "final_object_list",
         "The "
-        + state_description(left_after)
+        + state_description(right_after)
         + " and the "
-        + state_description(right_after),
+        + state_description(left_after),
+    )
+
+    change_type = normalize_change_type(
+        annotation.get("changeType")
+    )
+    changed_slot = str(
+        annotation.get("changedSlot") or ""
     )
 
     if change_type == "one_object_replacement":
         changed_left = is_left(changed_slot)
         before = left_before if changed_left else right_before
         after = left_after if changed_left else right_after
-        reference = right_after if changed_left else left_after
 
-        put(context, "old_object", state_description(before))
-        put(context, "new_object", state_description(after))
+        put("old_object", state_description(before))
+        put("new_object", state_description(after))
         put(
-            context,
-            "original_position",
-            left_position if changed_left else right_position,
+            "initial_position",
+            left_first() if changed_left else right_first(),
         )
         put(
-            context,
-            "relative_position",
-            "to the left of" if changed_left else "to the right of",
+            "final_position",
+            right_second() if changed_left else left_second(),
         )
-        put(context, "reference_object", state_description(reference))
 
     elif change_type == "two_objects_replacement":
-        put(context, "old_object_1", state_description(left_before))
-        put(context, "new_object_1", state_description(left_after))
-        put(context, "old_object_2", state_description(right_before))
-        put(context, "new_object_2", state_description(right_after))
+        put("old_object_1", state_description(left_before))
+        put("new_object_1", state_description(left_after))
+        put("old_object_2", state_description(right_before))
+        put("new_object_2", state_description(right_after))
+
+        put("initial_position_1", left_first())
+        put("final_position_1", right_second())
+        put("initial_position_2", right_first())
+        put("final_position_2", left_second())
 
     elif change_type == "same_object_color_change":
         changed_left = is_left(changed_slot)
         before = left_before if changed_left else right_before
         after = left_after if changed_left else right_after
-        reference = right_before if changed_left else left_before
 
-        put(context, "object", state_label(before))
-        put(context, "original_color", before.get("color"))
-        put(context, "new_color", after.get("color"))
+        put("object", state_label(before))
+        put("original_color", before.get("color"))
+        put("new_color", after.get("color"))
         put(
-            context,
-            "original_position",
-            left_position if changed_left else right_position,
+            "initial_position",
+            left_first() if changed_left else right_first(),
         )
         put(
-            context,
-            "relative_position",
-            "to the left of" if changed_left else "to the right of",
+            "final_position",
+            right_second() if changed_left else left_second(),
         )
-        put(context, "reference_object", state_description(reference))
 
     elif change_type == "distance_increase":
-        put(context, "initial_position_a", left_position)
-        put(context, "initial_position_b", right_position)
-        put(
-            context,
-            "final_position_a",
-            "farther toward the left edge of the table",
-        )
-        put(
-            context,
-            "final_position_b",
-            "farther toward the right edge of the table",
-        )
+        put("initial_position_a", left_first())
+        put("initial_position_b", right_first())
+        put("final_position_a", right_second())
+        put("final_position_b", left_second())
+
+    elif change_type == "swap_positions":
+        put("object_a_initial_position", left_first())
+        put("object_a_final_position", left_second())
+        put("object_b_initial_position", right_first())
+        put("object_b_final_position", right_second())
 
     elif change_type == "no_change":
         select_left = random.next(2) == 0
         selected = left_before if select_left else right_before
-        reference = right_before if select_left else left_before
 
-        put(context, "selected_object", state_description(selected))
+        put("selected_object", state_description(selected))
         put(
-            context,
-            "selected_position",
-            left_position if select_left else right_position,
+            "initial_selected_position",
+            left_first() if select_left else right_first(),
         )
         put(
-            context,
-            "relative_position",
-            "to the left of" if select_left else "to the right of",
+            "final_selected_position",
+            right_second() if select_left else left_second(),
         )
-        put(context, "reference_object", state_description(reference))
 
         if bool(selected.get("supportsColor", False)):
-            put(context, "selected_color", selected.get("color"))
+            put("selected_color", selected.get("color"))
 
     return context
 
@@ -951,12 +957,11 @@ def main() -> int:
         annotation,
         qa,
         record,
-        _,
+        selected_template_ids,
     ) in prepared:
-        annotation["changeType"] = normalize_change_type(
-            annotation.get("changeType")
-        )
+        annotation["changeType"] = normalize_change_type(annotation.get("changeType"))
         annotation["qa"] = qa
+        annotation["qaTemplateIds"] = selected_template_ids
 
         atomic_json_write(
             batch_dir / "annotation.json",

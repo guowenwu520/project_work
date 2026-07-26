@@ -216,9 +216,20 @@ public static class BatchConfiguration
 
     private static string ResolveQaLabel(string propClass)
     {
-        // The runtime key is the exact manifest `name` shown to the user.
-        // Do not read legacy source filenames or prefab metadata here, because old
-        // displayName values can survive model renames and leak into generated QA.
+        // Imported models keep `name` as the stable runtime/model lookup key, while
+        // `displayName` in ModelBundles/prop_manifest.json is the human-readable
+        // name used by generated QA.
+        if (ImportedPropLibrary.HasPrefab(propClass))
+        {
+            string displayName = ImportedPropLibrary.GetDisplayName(propClass);
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                return displayName.Trim();
+            }
+        }
+
+        // Built-in procedural props do not come from the imported-model manifest,
+        // so keep the existing human-readable name conversion for them.
         return DatasetConfiguration.ModelNameToQaLabel(propClass);
     }
 

@@ -15,10 +15,7 @@ public static class DatasetQAGenerator
         }
 
         System.Random random =
-            new System.Random(unchecked(
-                job.seed ^
-                0x5F3759DF ^
-                DatasetQATemplateLibrary.SamplingSalt));
+            new System.Random(unchecked(job.seed ^ 0x5F3759DF));
 
         Dictionary<string, string> context = BuildContext(job, random);
         List<TabletopQaTemplate> sourceTemplates =
@@ -94,11 +91,6 @@ public static class DatasetQAGenerator
         DatasetObjectState leftAfter = job.leftAfter;
         DatasetObjectState rightAfter = job.rightAfter;
 
-        Put(values, "position_a", LeftPosition());
-        Put(values, "position_b", RightPosition());
-        Put(values, "position_1", LeftPosition());
-        Put(values, "position_2", RightPosition());
-
         Put(values, "object_a", Description(leftBefore));
         Put(values, "object_b", Description(rightBefore));
 
@@ -106,9 +98,9 @@ public static class DatasetQAGenerator
             values,
             "final_object_list",
             "The " +
-            Description(leftAfter) +
+            Description(rightAfter) +
             " and the " +
-            Description(rightAfter));
+            Description(leftAfter));
 
         if (string.Equals(
             job.changeType,
@@ -120,20 +112,17 @@ public static class DatasetQAGenerator
                 changedLeft ? leftBefore : rightBefore;
             DatasetObjectState after =
                 changedLeft ? leftAfter : rightAfter;
-            DatasetObjectState reference =
-                changedLeft ? rightAfter : leftAfter;
 
             Put(values, "old_object", Description(before));
             Put(values, "new_object", Description(after));
             Put(
                 values,
-                "original_position",
-                changedLeft ? LeftPosition() : RightPosition());
+                "initial_position",
+                changedLeft ? LeftFirstView() : RightFirstView());
             Put(
                 values,
-                "relative_position",
-                changedLeft ? "to the left of" : "to the right of");
-            Put(values, "reference_object", Description(reference));
+                "final_position",
+                changedLeft ? RightSecondView() : LeftSecondView());
         }
         else if (string.Equals(
             job.changeType,
@@ -145,6 +134,10 @@ public static class DatasetQAGenerator
             Put(values, "old_object_2", Description(rightBefore));
             Put(values, "new_object_2", Description(rightAfter));
 
+            Put(values, "initial_position_1", LeftFirstView());
+            Put(values, "final_position_1", RightSecondView());
+            Put(values, "initial_position_2", RightFirstView());
+            Put(values, "final_position_2", LeftSecondView());
         }
         else if (string.Equals(
             job.changeType,
@@ -156,56 +149,54 @@ public static class DatasetQAGenerator
                 changedLeft ? leftBefore : rightBefore;
             DatasetObjectState after =
                 changedLeft ? leftAfter : rightAfter;
-            DatasetObjectState reference =
-                changedLeft ? rightBefore : leftBefore;
 
             Put(values, "object", Label(before));
             Put(values, "original_color", before.color);
             Put(values, "new_color", after.color);
             Put(
                 values,
-                "original_position",
-                changedLeft ? LeftPosition() : RightPosition());
+                "initial_position",
+                changedLeft ? LeftFirstView() : RightFirstView());
             Put(
                 values,
-                "relative_position",
-                changedLeft ? "to the left of" : "to the right of");
-            Put(values, "reference_object", Description(reference));
+                "final_position",
+                changedLeft ? RightSecondView() : LeftSecondView());
         }
         else if (string.Equals(
             job.changeType,
             DatasetChangeTypes.DistanceIncrease,
             StringComparison.OrdinalIgnoreCase))
         {
-            Put(values, "initial_position_a", LeftPosition());
-            Put(values, "initial_position_b", RightPosition());
-            Put(values, "final_position_a", "farther toward the left edge of the table");
-            Put(values, "final_position_b", "farther toward the right edge of the table");
+            Put(values, "initial_position_a", LeftFirstView());
+            Put(values, "initial_position_b", RightFirstView());
+            Put(values, "final_position_a", RightSecondView());
+            Put(values, "final_position_b", LeftSecondView());
         }
         else if (string.Equals(
             job.changeType,
             DatasetChangeTypes.SwapPositions,
             StringComparison.OrdinalIgnoreCase))
         {
+            Put(values, "object_a_initial_position", LeftFirstView());
+            Put(values, "object_a_final_position", LeftSecondView());
+            Put(values, "object_b_initial_position", RightFirstView());
+            Put(values, "object_b_final_position", RightSecondView());
         }
         else
         {
             bool selectLeft = random.Next(2) == 0;
             DatasetObjectState selected =
                 selectLeft ? leftBefore : rightBefore;
-            DatasetObjectState reference =
-                selectLeft ? rightBefore : leftBefore;
 
             Put(values, "selected_object", Description(selected));
             Put(
                 values,
-                "selected_position",
-                selectLeft ? LeftPosition() : RightPosition());
+                "initial_selected_position",
+                selectLeft ? LeftFirstView() : RightFirstView());
             Put(
                 values,
-                "relative_position",
-                selectLeft ? "to the left of" : "to the right of");
-            Put(values, "reference_object", Description(reference));
+                "final_selected_position",
+                selectLeft ? RightSecondView() : LeftSecondView());
 
             if (selected.supportsColor &&
                 !string.IsNullOrWhiteSpace(selected.color))
@@ -346,13 +337,23 @@ public static class DatasetQAGenerator
         return state.label.Trim();
     }
 
-    private static string LeftPosition()
+    private static string LeftFirstView()
     {
-        return "the left side of the table";
+        return "the left side of the table in the first view";
     }
 
-    private static string RightPosition()
+    private static string RightFirstView()
     {
-        return "the right side of the table";
+        return "the right side of the table in the first view";
+    }
+
+    private static string LeftSecondView()
+    {
+        return "the left side of the table in the second view";
+    }
+
+    private static string RightSecondView()
+    {
+        return "the right side of the table in the second view";
     }
 }
