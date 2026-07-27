@@ -80,6 +80,20 @@ def fail(message: str) -> None:
     raise SystemExit(f"[six-change validation failed] {message}")
 
 
+def prop_class(state: object, location: str) -> str:
+    if not isinstance(state, dict):
+        fail(f"{location} is missing an object state")
+    value = str(state.get("propClass", "")).strip()
+    if not value:
+        fail(f"{location} has no propClass")
+    return value.casefold()
+
+
+def require_unique(values: list[str], location: str) -> None:
+    if len(values) != len(set(values)):
+        fail(f"{location} contains a repeated object class: {values}")
+
+
 annotations = sorted(root.glob("Batch_*/annotation.json"))
 if len(annotations) != 6:
     fail(f"expected 6 annotations, found {len(annotations)}")
@@ -95,6 +109,29 @@ for path in annotations:
         fail(f"unexpected change type {change_type!r}")
     if change_type in found:
         fail(f"duplicate change type {change_type!r}")
+
+    left_before = prop_class(annotation.get("leftBefore"), f"{path.parent.name}.leftBefore")
+    right_before = prop_class(annotation.get("rightBefore"), f"{path.parent.name}.rightBefore")
+    require_unique([left_before, right_before], path.parent.name)
+
+    if change_type == "one_object_replacement":
+        changed_slot = annotation.get("changedSlot")
+        changed_after_key = "leftAfter" if changed_slot == "left" else "rightAfter"
+        changed_after = prop_class(
+            annotation.get(changed_after_key),
+            f"{path.parent.name}.{changed_after_key}",
+        )
+        require_unique(
+            [left_before, right_before, changed_after],
+            path.parent.name,
+        )
+    elif change_type == "two_objects_replacement":
+        left_after = prop_class(annotation.get("leftAfter"), f"{path.parent.name}.leftAfter")
+        right_after = prop_class(annotation.get("rightAfter"), f"{path.parent.name}.rightAfter")
+        require_unique(
+            [left_before, right_before, left_after, right_after],
+            path.parent.name,
+        )
 
     qa = annotation.get("qa")
     if not isinstance(qa, list) or len(qa) != 8:

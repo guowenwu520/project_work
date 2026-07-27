@@ -16,9 +16,10 @@
     ]
   },
   "templates_per_change_type": 60,
-  "content_revision": "user-chinese-authoritative-english-v4-2026-07-24",
+  "content_revision": "user-chinese-authoritative-english-v5-2026-07-25",
   "sampling_salt": 1,
   "camera_path": "The camera starts on one side of the table, turns away, walks around the table, reaches the opposite side, and then looks toward the table again.",
+  "grammar_policy": "Write complete questions and answers with explicit subjects and predicates. Keep single-object questions focused on one object. Use passive voice when the moved object, rather than the mover, is the focus.",
   "viewpoint_policy": {
     "first_view_left": "the left side of the table in the first view",
     "first_view_right": "the right side of the table in the first view",
@@ -353,8 +354,8 @@
         },
         {
           "template_id": "one_object_replacement_34",
-          "question": "Does the arrangement change, or does only the object identity change?",
-          "answer": "The arrangement stays the same; only the object identity changes.",
+          "question": "How did the tabletop arrangement change after the object replacement?",
+          "answer": "The arrangement did not change; only the object identity changed.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -1262,8 +1263,8 @@
         },
         {
           "template_id": "same_object_color_change_11",
-          "question": "Did the {object} itself change, or did only its color change?",
-          "answer": "The {object} itself remained unchanged; only its color changed.",
+          "question": "Besides its color, what else changed about the {object}?",
+          "answer": "Nothing else changed; only its color changed.",
           "required_variables": [
             "object"
           ],
@@ -1873,8 +1874,8 @@
         },
         {
           "template_id": "distance_increase_16",
-          "question": "What movement caused the distance to increase?",
-          "answer": "The two objects moved away from each other.",
+          "question": "What caused the distance between the two objects to increase?",
+          "answer": "The two objects were moved away from each other.",
           "required_variables": [],
           "answer_style": "descriptive"
         },
@@ -2307,8 +2308,8 @@
         },
         {
           "template_id": "swap_positions_07",
-          "question": "Which object has moved to {object_b_final_position}?",
-          "answer": "The {object_b} has moved there.",
+          "question": "Which object was moved to {object_b_final_position}?",
+          "answer": "The {object_b} was moved there.",
           "required_variables": [
             "object_b_final_position",
             "object_b"
@@ -2317,8 +2318,8 @@
         },
         {
           "template_id": "swap_positions_08",
-          "question": "Which object has moved to {object_a_final_position}?",
-          "answer": "The {object_a} has moved there.",
+          "question": "Which object was moved to {object_a_final_position}?",
+          "answer": "The {object_a} was moved there.",
           "required_variables": [
             "object_a_final_position",
             "object_a"
@@ -2513,8 +2514,8 @@
         },
         {
           "template_id": "swap_positions_29",
-          "question": "Did the two objects move independently or exchange locations?",
-          "answer": "They exchanged locations.",
+          "question": "What happened to the positions of the two objects?",
+          "answer": "They swapped positions.",
           "required_variables": [],
           "answer_style": "descriptive"
         },

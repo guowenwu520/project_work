@@ -1,0 +1,236 @@
+[
+  {
+    "video_id": "scene_183077",
+    "video_path": "data/video_183077.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "Describe the replacement that occurred.",
+        "answer": "The starbuacks was replaced by the white snowman without changing the occupied physical place on the table."
+      },
+      {
+        "question": "Describe the final state of the changed place.",
+        "answer": "The white snowman is on the left side of the table in the second view, replacing the starbuacks."
+      },
+      {
+        "question": "Compared with the initial tabletop state, what changed in the final tabletop state?",
+        "answer": "Apart from the camera moving to the opposite side, the only tabletop change is that the white snowman replaces the starbuacks."
+      },
+      {
+        "question": "Did the total number of objects remain the same?",
+        "answer": "Yes."
+      },
+      {
+        "question": "At least how many replacements occurred?",
+        "answer": "At least one object replacement occurred."
+      },
+      {
+        "question": "Was exactly one object replaced?",
+        "answer": "Yes."
+      },
+      {
+        "question": "Did the entire tabletop scene remain unchanged?",
+        "answer": "No."
+      },
+      {
+        "question": "Was the white snowman already present in the initial scene?",
+        "answer": "No."
+      }
+    ]
+  },
+  {
+    "video_id": "scene_183078",
+    "video_path": "data/video_183078.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "What happened to the stuffed bear?",
+        "answer": "It was replaced by the cyan oct prism without changing the occupied physical place."
+      },
+      {
+        "question": "What final objects mark the two changed locations?",
+        "answer": "The cyan oct prism and the cyan arch mark the changed locations."
+      },
+      {
+        "question": "Did the entire tabletop scene remain unchanged?",
+        "answer": "No."
+      },
+      {
+        "question": "Which two replacements are visible after the camera reaches the opposite side of the table and looks back at the tabletop?",
+        "answer": "The stuffed bear and red donut ring have been replaced by the cyan oct prism and cyan arch."
+      },
+      {
+        "question": "Which objects would need to be restored to recreate the beginning?",
+        "answer": "The stuffed bear and the red donut ring would need to be restored."
+      },
+      {
+        "question": "Did the total number of objects decrease?",
+        "answer": "No."
+      },
+      {
+        "question": "What should replace the cyan oct prism to restore the initial tabletop state?",
+        "answer": "The stuffed bear should replace it."
+      },
+      {
+        "question": "Was the cyan arch present at the beginning?",
+        "answer": "No."
+      }
+    ]
+  },
+  {
+    "video_id": "scene_183079",
+    "video_path": "data/video_183079.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "Did the other object remain unchanged?",
+        "answer": "Yes."
+      },
+      {
+        "question": "What color would the cube block need to return to in order to restore the initial tabletop state?",
+        "answer": "The cube block would need to return to purple."
+      },
+      {
+        "question": "Did the cube block move to another location?",
+        "answer": "No."
+      },
+      {
+        "question": "What color should the cube block be to match the final tabletop state?",
+        "answer": "It should be blue."
+      },
+      {
+        "question": "What changed in the tabletop scene itself?",
+        "answer": "The cube block changed from purple to blue."
+      },
+      {
+        "question": "What was the final color of the cube block, which was originally purple?",
+        "answer": "Its final color was blue."
+      },
+      {
+        "question": "What color should the cube block be to match the beginning?",
+        "answer": "It should be purple."
+      },
+      {
+        "question": "Were any objects added or removed?",
+        "answer": "No objects were added or removed; only the cube block's color changed."
+      }
+    ]
+  },
+  {
+    "video_id": "scene_183080",
+    "video_path": "data/video_183080.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "What would need to happen to restore the original spacing?",
+        "answer": "Both objects would need to move back toward each other."
+      },
+      {
+        "question": "What remained unchanged despite the movement?",
+        "answer": "The identities, colors, and shapes of both objects remained unchanged."
+      },
+      {
+        "question": "Was either object replaced?",
+        "answer": "No."
+      },
+      {
+        "question": "Did both objects remain visible after the change?",
+        "answer": "Yes."
+      },
+      {
+        "question": "Where was the keyboard after the change?",
+        "answer": "It was farther toward the left side of the table in the second view."
+      },
+      {
+        "question": "Describe the final scene relative to the initial scene.",
+        "answer": "The same two objects remain on the table, but they are farther apart."
+      },
+      {
+        "question": "Did the keyboard end farther toward the left side of the table in the second view?",
+        "answer": "Yes."
+      },
+      {
+        "question": "Did the purple cone tower end farther toward the right side of the table in the second view?",
+        "answer": "Yes."
+      }
+    ]
+  },
+  {
+    "video_id": "scene_183081",
+    "video_path": "data/video_183081.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "Which object moved to the right side of the table in the second view?",
+        "answer": "The white capsule pill moved there."
+      },
+      {
+        "question": "What happened to the white capsule pill's location?",
+        "answer": "It moved to the other side of the table and ended on the right side of the table in the second view."
+      },
+      {
+        "question": "Which object moved to the left side of the table in the second view?",
+        "answer": "The red capsule pill moved there."
+      },
+      {
+        "question": "Which object ended at the red capsule pill's starting location?",
+        "answer": "The white capsule pill ended there."
+      },
+      {
+        "question": "Which two objects exchanged places?",
+        "answer": "The red capsule pill and the white capsule pill exchanged places."
+      },
+      {
+        "question": "Were any objects replaced?",
+        "answer": "No objects were replaced; the two objects swapped positions."
+      },
+      {
+        "question": "How many objects were involved in the swap?",
+        "answer": "Two objects were involved."
+      },
+      {
+        "question": "How many objects were present at the end?",
+        "answer": "There were 2 objects."
+      }
+    ]
+  },
+  {
+    "video_id": "scene_183082",
+    "video_path": "data/video_183082.mp4",
+    "scene_type": "tabletop",
+    "questions": [
+      {
+        "question": "Did the red dumbbell remain in the same physical place?",
+        "answer": "Yes."
+      },
+      {
+        "question": "What was true about the red dumbbell's color or appearance at the beginning?",
+        "answer": "It had its original color or appearance."
+      },
+      {
+        "question": "Was the red dumbbell still visible at the end?",
+        "answer": "The red dumbbell remained visible."
+      },
+      {
+        "question": "What remained unchanged about the scene?",
+        "answer": "The objects, colors, positions, and count all remained unchanged."
+      },
+      {
+        "question": "Was any object's color different in the final scene?",
+        "answer": "No."
+      },
+      {
+        "question": "Where is the red dumbbell at the end?",
+        "answer": "It is on the left side of the table in the second view."
+      },
+      {
+        "question": "What should a viewer conclude after comparing the initial view with the final opposite-side view?",
+        "answer": "The viewing side changed, but the tabletop state did not."
+      },
+      {
+        "question": "Did any two objects exchange their original locations?",
+        "answer": "No."
+      }
+    ]
+  }
+]

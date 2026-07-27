@@ -118,7 +118,6 @@ public static class DatasetConfiguration
             config.colors = CreateDefault().colors;
         }
 
-        config.sameClassPairProbability = Mathf.Clamp01(config.sameClassPairProbability);
         if (string.IsNullOrWhiteSpace(config.videoPathPrefix))
         {
             config.videoPathPrefix = "data";

@@ -52,15 +52,13 @@ public static class BatchConfiguration
         if (normalizedForcedType == DatasetChangeTypes.ColorChange)
         {
             leftProp = BuiltInPropNames[random.Next(BuiltInPropNames.Length)];
-            rightProp = PickReplacementProp(propNames, random, leftProp, null);
+            rightProp = PickDistinctProp(propNames, random, leftProp);
         }
         else
         {
             // Imported models and built-in simple props are selected from the same pool.
             leftProp = propNames[random.Next(propNames.Length)];
-            rightProp = random.NextDouble() < config.sameClassPairProbability
-                ? leftProp
-                : PickReplacementProp(propNames, random, leftProp, null);
+            rightProp = PickDistinctProp(propNames, random, leftProp);
         }
 
         BatchJob job = new BatchJob
@@ -94,14 +92,27 @@ public static class BatchConfiguration
             {
                 DatasetObjectState before = job.GetBefore(job.changedSlot);
                 DatasetObjectState after = job.GetAfter(job.changedSlot);
-                after.propClass = PickReplacementProp(propNames, random, before.propClass, null);
+                after.propClass = PickDistinctProp(
+                    propNames,
+                    random,
+                    job.leftBefore.propClass,
+                    job.rightBefore.propClass);
                 UpdateStateAfterReplacement(after, config, random, before.supportsColor ? before.color : null);
                 break;
             }
             case DatasetChangeTypes.TwoObjectsReplacement:
             {
-                string newLeft = PickReplacementProp(propNames, random, job.leftBefore.propClass, null);
-                string newRight = PickReplacementProp(propNames, random, job.rightBefore.propClass, newLeft);
+                string newLeft = PickDistinctProp(
+                    propNames,
+                    random,
+                    job.leftBefore.propClass,
+                    job.rightBefore.propClass);
+                string newRight = PickDistinctProp(
+                    propNames,
+                    random,
+                    job.leftBefore.propClass,
+                    job.rightBefore.propClass,
+                    newLeft);
                 job.leftAfter = CreateState("left", newLeft, config, random, null);
                 job.rightAfter = CreateState("right", newRight, config, random, null);
                 job.changedSlot = "both";
@@ -257,40 +268,48 @@ public static class BatchConfiguration
         return selected;
     }
 
-    private static string PickReplacementProp(
+    private static string PickDistinctProp(
         string[] propNames,
         System.Random random,
-        string originalClass,
-        string preferredAvoidClass)
+        params string[] excludedClasses)
     {
-        if (propNames.Length <= 1)
-        {
-            return originalClass;
-        }
-
-        int guard = 0;
-        while (guard++ < 200)
-        {
-            string candidate = propNames[random.Next(propNames.Length)];
-            if (Matches(candidate, originalClass))
-            {
-                continue;
-            }
-            if (!string.IsNullOrEmpty(preferredAvoidClass) && Matches(candidate, preferredAvoidClass))
-            {
-                continue;
-            }
-            return candidate;
-        }
-
+        List<string> candidates = new List<string>();
         for (int i = 0; i < propNames.Length; i++)
         {
-            if (!Matches(propNames[i], originalClass))
+            string candidate = propNames[i];
+            if (string.IsNullOrWhiteSpace(candidate) ||
+                ContainsIgnoreCase(candidates, candidate))
             {
-                return propNames[i];
+                continue;
+            }
+
+            bool excluded = false;
+            if (excludedClasses != null)
+            {
+                for (int j = 0; j < excludedClasses.Length; j++)
+                {
+                    if (Matches(candidate, excludedClasses[j]))
+                    {
+                        excluded = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!excluded)
+            {
+                candidates.Add(candidate);
             }
         }
-        return originalClass;
+
+        if (candidates.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "The active prop pool does not contain enough unique objects " +
+                "for the requested scene.");
+        }
+
+        return candidates[random.Next(candidates.Count)];
     }
 
     private static bool Matches(string a, string b)

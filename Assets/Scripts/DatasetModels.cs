@@ -44,7 +44,6 @@ public sealed class DatasetChangeProbabilities
 public sealed class DatasetGenerationConfig
 {
     public int baseSeed = 20260714;
-    public float sameClassPairProbability = 0.15f;
     public string videoPathPrefix = "data";
     public DatasetChangeProbabilities changeProbabilities = new DatasetChangeProbabilities();
     public List<DatasetColorDefinition> colors = new List<DatasetColorDefinition>();

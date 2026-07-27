@@ -1,0 +1,362 @@
+[
+  {
+    "video": [
+      "data/video_100000.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid both objects remain exactly as they were?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The handbag was replaced by the mug, while the bottle remained unchanged."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100000.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid any object get swapped out?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The handbag was replaced by the mug, while the bottle remained."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100000.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there a color change?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. Neither object changed color. The handbag was replaced by the mug, and the bottle kept its original color."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100000.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas the spatial arrangement unchanged?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The replacement did not change the layout: the mug appeared where the handbag had been, and the bottle did not move."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100001.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas the scene unchanged afterward?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The red apple was replaced by the camera, and the white cup was replaced by the keyboard."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100001.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWere the same two objects still present afterward?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. Both objects were replaced. The camera replaced the red apple, and the keyboard replaced the white cup."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100001.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there no color change?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The objects were replaced rather than recolored: the camera replaced the red apple, and the keyboard replaced the white cup."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100001.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid both positions remain unchanged?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The camera and the keyboard occupied the original positions of the red apple and the white cup, respectively."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100002.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there any visible change?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The color of the orange sphere changed to blue; the green cylinder stayed the same."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100002.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid both objects stay in the scene?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. Neither the orange sphere nor the green cylinder was replaced."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100002.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWere the objects' colors unaffected?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The color of the orange sphere changed to blue; the green cylinder did not change color."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100002.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there any movement?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The blue sphere and the green cylinder stayed in the same positions."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100003.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there any visible change?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The book and the alarm clock moved farther apart."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100003.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid either object get replaced?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The book and the alarm clock remained the same objects."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100003.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid the scene remain free of any color change?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. Neither the book nor the alarm clock changed color."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100003.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid the two tabletop locations stay the same?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. Both objects moved, increasing the distance between the book and the alarm clock."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100004.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there any visible change?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The banana and the remote control switched places."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100004.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWere any objects replaced?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The banana and the remote control remained the same objects."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100004.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there a color change?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. Neither the banana nor the remote control changed color."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100004.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid either object change position?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The banana and the remote control switched places."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100005.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas anything different afterward?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The purple cup and the green toy car remained unchanged."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100005.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid both original objects remain?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. Neither the purple cup nor the green toy car was replaced."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100005.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid neither object change color?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes. The purple cup and the green toy car kept their original colors."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_100005.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWas there any movement?"
+      },
+      {
+        "from": "gpt",
+        "value": "No. The purple cup and the green toy car stayed in their original positions."
+      }
+    ]
+  }
+]

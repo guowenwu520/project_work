@@ -33,11 +33,10 @@ public sealed class DatasetQaSettingsWindow : EditorWindow
         scroll = EditorGUILayout.BeginScrollView(scroll);
         EditorGUILayout.LabelField("Video + QA Dataset Settings", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "All imported and built-in props are sampled from the same pool. Built-in simple props support six change types, including color change. Imported props keep their original materials and use only the other five change types.",
+            "All imported and built-in props are sampled from the same pool. A scene never samples the same object class twice. Built-in simple props support six change types, including color change. Imported props keep their original materials and use only the other five change types.",
             MessageType.Info);
 
         config.baseSeed = EditorGUILayout.IntField("Base Seed", config.baseSeed);
-        config.sameClassPairProbability = EditorGUILayout.Slider("Same-class Pair Probability", config.sameClassPairProbability, 0f, 1f);
         config.videoPathPrefix = EditorGUILayout.TextField("Video Path Prefix", config.videoPathPrefix);
 
         EditorGUILayout.Space();

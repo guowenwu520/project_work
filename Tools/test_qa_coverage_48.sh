@@ -75,6 +75,45 @@ expected={
  group["change_type"]:{item["template_id"] for item in group["templates"]}
  for group in lib["change_types"]
 }
+templates={
+ item["template_id"]:item
+ for group in lib["change_types"]
+ for item in group["templates"]
+}
+
+required_phrasing={
+ "one_object_replacement_34":(
+  "How did the tabletop arrangement change after the object replacement?",
+  "The arrangement did not change; only the object identity changed.",
+ ),
+ "same_object_color_change_11":(
+  "Besides its color, what else changed about the {object}?",
+  "Nothing else changed; only its color changed.",
+ ),
+ "distance_increase_16":(
+  "What caused the distance between the two objects to increase?",
+  "The two objects were moved away from each other.",
+ ),
+ "swap_positions_07":(
+  "Which object was moved to {object_b_final_position}?",
+  "The {object_b} was moved there.",
+ ),
+ "swap_positions_08":(
+  "Which object was moved to {object_a_final_position}?",
+  "The {object_a} was moved there.",
+ ),
+ "swap_positions_29":(
+  "What happened to the positions of the two objects?",
+  "They swapped positions.",
+ ),
+}
+
+for template_id,(question,answer) in required_phrasing.items():
+ item=templates.get(template_id)
+ if item is None:
+  fail(f"missing required template {template_id}")
+ if item.get("question")!=question or item.get("answer")!=answer:
+  fail(f"{template_id}: approved wording changed")
 
 for change_type in types:
  if len(expected.get(change_type,set()))!=60:

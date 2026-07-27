@@ -1,6 +1,5 @@
 {
   "baseSeed": 20260714,
-  "sameClassPairProbability": 0.15,
   "videoPathPrefix": "data",
   "changeProbabilities": {
     "oneObjectReplacement": 0.25,

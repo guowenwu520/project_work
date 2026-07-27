@@ -1,0 +1,32 @@
+[
+  {
+    "video": [
+      "data/video_000000.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nDid anything change in the original view after the camera returned?"
+      },
+      {
+        "from": "gpt",
+        "value": "Yes."
+      }
+    ]
+  },
+  {
+    "video": [
+      "data/video_000000.mp4"
+    ],
+    "conversations": [
+      {
+        "from": "human",
+        "value": "<video>\nWhat item is changed to what item?"
+      },
+      {
+        "from": "gpt",
+        "value": "The original blue snack changed to a yellow tissue bag."
+      }
+    ]
+  }
+]
