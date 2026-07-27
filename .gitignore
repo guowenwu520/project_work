@@ -152,3 +152,9 @@ backup_*/
 *_backup/
 *_backup_*/
 backup_before_*/
+logs/
+Assets/ModelPacks
+Assets/RawModels
+Assets/Resources/
+.*
+*/__pycache__/

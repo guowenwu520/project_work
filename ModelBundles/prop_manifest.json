@@ -33,7 +33,7 @@
         },
         {
             "name": "dragon",
-            "displayName": "dragon",
+            "displayName": "Dragon",
             "bundleFile": "modelpack_0000.bundle",
             "assetName": "assets/modelpacks/generated/dragon.prefab"
         },
@@ -63,7 +63,7 @@
         },
         {
             "name": "keyboard",
-            "displayName": "keyboard",
+            "displayName": "Keyboard",
             "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/keyboard.prefab"
         },
@@ -75,7 +75,7 @@
         },
         {
             "name": "mouse",
-            "displayName": "mouse",
+            "displayName": "Mouse",
             "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/mouse.prefab"
         },
@@ -111,7 +111,7 @@
         },
         {
             "name": "starbuacks",
-            "displayName": "starbuacks",
+            "displayName": "Cup",
             "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/starbuacks.prefab"
         },
