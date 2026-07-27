@@ -3,11 +3,13 @@
   "videoPathPrefix": "data",
   "changeProbabilities": {
     "oneObjectReplacement": 0.25,
-    "twoObjectsReplacement": 0.18,
     "colorChange": 0.17,
-    "distanceIncrease": 0.15,
+    "distanceIncrease": 0.075,
+    "distanceDecrease": 0.075,
     "swapPositions": 0.12,
-    "noChange": 0.13
+    "noChange": 0.13,
+    "objectAdding": 0.09,
+    "objectDeleting": 0.09
   },
   "colors": [
     { "name": "red", "hex": "#D94A4A" },

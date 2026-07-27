@@ -4,9 +4,12 @@ using UnityEngine;
 
 public sealed class ExperimentBootstrap : MonoBehaviour
 {
-    // 距离增大时，每个物体期望向外移动 0.32m。
-    // 两个物体合计最多增加约 0.64m 的间距。
+    // 距离增大时，仅被选中的一个物体期望向外移动 0.32m。
     private const float DistanceIncreaseDesiredMove = 0.32f;
+
+    // 距离减小时，仅被选中的一个物体期望靠近另一个物体 0.22m。
+    private const float DistanceDecreaseDesiredMove = 0.22f;
+    private const float DistanceDecreaseMinimumGap = 0.08f;
 
     // 物体最外侧与桌边至少保留 8cm。
     private const float DistanceIncreaseEdgeMargin = 0.08f;
@@ -56,7 +59,8 @@ public sealed class ExperimentBootstrap : MonoBehaviour
             BatchConfiguration.ResolveJob(
                 options.BatchIndex,
                 options.SeedOverride,
-                options.ForcedChangeType);
+                options.ForcedChangeType,
+                options.ForcedChangedSlot);
 
         UnityEngine.Random.InitState(
             job.seed);
@@ -86,8 +90,12 @@ public sealed class ExperimentBootstrap : MonoBehaviour
         DeskPropSlot rightSlot;
 
         ResolveSlots(
-            job.leftBefore.propClass,
-            job.rightBefore.propClass,
+            ResolveSlotPropClass(
+                job.leftBefore,
+                job.leftAfter),
+            ResolveSlotPropClass(
+                job.rightBefore,
+                job.rightAfter),
             out leftSlot,
             out rightSlot);
 
@@ -99,7 +107,7 @@ public sealed class ExperimentBootstrap : MonoBehaviour
 
 
         GameObject leftBefore =
-            CreateProp(
+            CreatePropIfPresent(
                 propFactory,
                 job.leftBefore,
                 propRoot,
@@ -107,7 +115,7 @@ public sealed class ExperimentBootstrap : MonoBehaviour
                 "LeftBefore");
 
         GameObject rightBefore =
-            CreateProp(
+            CreatePropIfPresent(
                 propFactory,
                 job.rightBefore,
                 propRoot,
@@ -177,68 +185,79 @@ public sealed class ExperimentBootstrap : MonoBehaviour
         }
         else if (
             job.changeType ==
-            DatasetChangeTypes.TwoObjectsReplacement)
+            DatasetChangeTypes.ObjectAdding)
         {
-            GameObject leftAfter =
+            bool addedLeft =
+                string.Equals(
+                    job.changedSlot,
+                    "left",
+                    StringComparison.OrdinalIgnoreCase);
+
+            GameObject addedObject =
                 CreateProp(
                     propFactory,
-                    job.leftAfter,
+                    addedLeft
+                        ? job.leftAfter
+                        : job.rightAfter,
                     propRoot,
-                    leftSlot,
-                    "LeftAfter");
+                    addedLeft
+                        ? leftSlot
+                        : rightSlot,
+                    addedLeft
+                        ? "LeftAdded"
+                        : "RightAdded");
 
-            GameObject rightAfter =
-                CreateProp(
-                    propFactory,
-                    job.rightAfter,
-                    propRoot,
-                    rightSlot,
-                    "RightAfter");
+            addedObject.SetActive(false);
+            replacementsToShow.Add(addedObject);
+        }
+        else if (
+            job.changeType ==
+            DatasetChangeTypes.ObjectDeleting)
+        {
+            GameObject deletedObject =
+                string.Equals(
+                    job.changedSlot,
+                    "left",
+                    StringComparison.OrdinalIgnoreCase)
+                    ? leftBefore
+                    : rightBefore;
 
-            leftAfter.SetActive(false);
-            rightAfter.SetActive(false);
+            if (deletedObject == null)
+            {
+                throw new InvalidOperationException(
+                    "Object-deleting scene is missing the object " +
+                    "selected for removal.");
+            }
 
-            originalsToHide.Add(
-                leftBefore);
-
-            originalsToHide.Add(
-                rightBefore);
-
-            replacementsToShow.Add(
-                leftAfter);
-
-            replacementsToShow.Add(
-                rightAfter);
+            originalsToHide.Add(deletedObject);
         }
 
         // ============================================================
-        // 距离增大
-        //
-        // 原来：
-        //
-        // left  -= 0.13m
-        // right += 0.13m
-        //
-        // 现在：
-        //
-        // 1. 每边最多移动 0.32m；
-        // 2. 自动获取物体实际 Renderer Bounds；
-        // 3. 自动获取桌面的 Bounds；
-        // 4. 保证物体最外侧仍位于桌面内部；
-        // 5. 与桌边至少保留 8cm；
-        // 6. 大模型会自动减少移动距离。
+        // 单物体距离变化：changedSlot 指定唯一移动的物体。
+        // 增大时向桌外侧移动，减小时朝另一物体移动。
         // ============================================================
         else if (
             job.changeType ==
-            DatasetChangeTypes.DistanceIncrease)
+            DatasetChangeTypes.DistanceIncrease ||
+            job.changeType ==
+            DatasetChangeTypes.DistanceDecrease)
         {
-            DeskPropSlot leftAfterSlot =
-                leftSlot;
-
-            DeskPropSlot rightAfterSlot =
-                rightSlot;
-
-
+            bool moveLeft =
+                string.Equals(
+                    job.changedSlot,
+                    "left",
+                    StringComparison.OrdinalIgnoreCase);
+            GameObject movingObject =
+                moveLeft ? leftBefore : rightBefore;
+            GameObject stationaryObject =
+                moveLeft ? rightBefore : leftBefore;
+            DeskPropSlot movingSlot =
+                moveLeft ? leftSlot : rightSlot;
+            DeskPropSlot stationarySlot =
+                moveLeft ? rightSlot : leftSlot;
+            bool movingIsPhysicallyLeft =
+                movingSlot.localPosition.x <
+                stationarySlot.localPosition.x;
             Bounds tableTopBounds;
 
             if (
@@ -269,77 +288,50 @@ public sealed class ExperimentBootstrap : MonoBehaviour
             }
 
 
-            leftAfterSlot.localPosition =
-                ResolveDistanceIncreasePosition(
-                    leftBefore,
-                    propRoot,
-                    leftSlot.localPosition,
-                    tableTopBounds,
-                    true);
-
-
-            rightAfterSlot.localPosition =
-                ResolveDistanceIncreasePosition(
-                    rightBefore,
-                    propRoot,
-                    rightSlot.localPosition,
-                    tableTopBounds,
-                    false);
-
+            Vector3 movingAfterPosition =
+                job.changeType ==
+                DatasetChangeTypes.DistanceIncrease
+                    ? ResolveDistanceIncreasePosition(
+                        movingObject,
+                        propRoot,
+                        movingSlot.localPosition,
+                        tableTopBounds,
+                        movingIsPhysicallyLeft)
+                    : ResolveDistanceDecreasePosition(
+                        movingObject,
+                        stationaryObject,
+                        propRoot,
+                        movingSlot.localPosition,
+                        stationarySlot.localPosition);
 
             repositionTargets =
-                new[]
-                {
-                    leftBefore.transform,
-                    rightBefore.transform
-                };
-
-
+                new[] { movingObject.transform };
             afterLocalPositions =
-                new[]
-                {
-                    leftAfterSlot.localPosition,
-                    rightAfterSlot.localPosition
-                };
-
-
+                new[] { movingAfterPosition };
             afterLocalRotations =
                 new[]
                 {
                     Quaternion.Euler(
                         0f,
-                        leftAfterSlot.yaw,
-                        0f),
-
-                    Quaternion.Euler(
-                        0f,
-                        rightAfterSlot.yaw,
+                        movingSlot.yaw,
                         0f)
                 };
-
-
             float beforeDistance =
                 Vector3.Distance(
-                    leftSlot.localPosition,
-                    rightSlot.localPosition);
-
-
+                    movingSlot.localPosition,
+                    stationarySlot.localPosition);
             float afterDistance =
                 Vector3.Distance(
-                    leftAfterSlot.localPosition,
-                    rightAfterSlot.localPosition);
-
-
+                    movingAfterPosition,
+                    stationarySlot.localPosition);
             Debug.Log(
-                "DistanceIncrease: " +
-                "left x " +
-                leftSlot.localPosition.x.ToString("F3") +
+                job.changeType +
+                ": moved " +
+                job.changedSlot +
+                " x " +
+                movingSlot.localPosition.x.ToString("F3") +
                 " -> " +
-                leftAfterSlot.localPosition.x.ToString("F3") +
-                ", right x " +
-                rightSlot.localPosition.x.ToString("F3") +
-                " -> " +
-                rightAfterSlot.localPosition.x.ToString("F3") +
+                movingAfterPosition.x.ToString("F3") +
                 ", distance " +
                 beforeDistance.ToString("F3") +
                 " -> " +
@@ -444,6 +436,14 @@ public sealed class ExperimentBootstrap : MonoBehaviour
         DeskPropSlot slot,
         string prefix)
     {
+        if (state == null ||
+            !state.present ||
+            string.IsNullOrWhiteSpace(state.propClass))
+        {
+            throw new InvalidOperationException(
+                "Cannot instantiate an absent tabletop object.");
+        }
+
         GameObject prop =
             factory.Create(
                 state.propClass,
@@ -467,6 +467,50 @@ public sealed class ExperimentBootstrap : MonoBehaviour
         }
 
         return prop;
+    }
+
+
+    private static GameObject CreatePropIfPresent(
+        HybridPropFactory factory,
+        DatasetObjectState state,
+        Transform parent,
+        DeskPropSlot slot,
+        string prefix)
+    {
+        if (state == null || !state.present)
+        {
+            return null;
+        }
+
+        return CreateProp(
+            factory,
+            state,
+            parent,
+            slot,
+            prefix);
+    }
+
+
+    private static string ResolveSlotPropClass(
+        DatasetObjectState before,
+        DatasetObjectState after)
+    {
+        if (before != null &&
+            before.present &&
+            !string.IsNullOrWhiteSpace(before.propClass))
+        {
+            return before.propClass;
+        }
+
+        if (after != null &&
+            after.present &&
+            !string.IsNullOrWhiteSpace(after.propClass))
+        {
+            return after.propClass;
+        }
+
+        throw new InvalidOperationException(
+            "A tabletop slot has no object in either view.");
     }
 
 
@@ -495,40 +539,43 @@ public sealed class ExperimentBootstrap : MonoBehaviour
              originalCategory ==
                  DeskPropCategory.Keyboard))
         {
-            DeskPropSlot keyboard =
-                new DeskPropSlot(
-                    new Vector3(
-                        0.24f,
-                        0f,
-                        0.08f),
-                    -7f);
-
-            DeskPropSlot mouse =
-                new DeskPropSlot(
-                    new Vector3(
-                        -0.24f,
-                        0f,
-                        -0.02f),
-                    18f);
-
-
             if (
                 stableCategory ==
                 DeskPropCategory.Keyboard)
             {
                 stableSlot =
-                    keyboard;
+                    new DeskPropSlot(
+                        new Vector3(
+                            -0.24f,
+                            0f,
+                            0.08f),
+                        -7f);
 
                 originalSlot =
-                    mouse;
+                    new DeskPropSlot(
+                        new Vector3(
+                            0.24f,
+                            0f,
+                            -0.02f),
+                        18f);
             }
             else
             {
                 stableSlot =
-                    mouse;
+                    new DeskPropSlot(
+                        new Vector3(
+                            -0.24f,
+                            0f,
+                            -0.02f),
+                        18f);
 
                 originalSlot =
-                    keyboard;
+                    new DeskPropSlot(
+                        new Vector3(
+                            0.24f,
+                            0f,
+                            0.08f),
+                        -7f);
             }
 
             return;
@@ -545,40 +592,43 @@ public sealed class ExperimentBootstrap : MonoBehaviour
              originalCategory ==
                  DeskPropCategory.Laptop))
         {
-            DeskPropSlot laptop =
-                new DeskPropSlot(
-                    new Vector3(
-                        0.00f,
-                        0f,
-                        0.10f),
-                    -4f);
-
-            DeskPropSlot mouse =
-                new DeskPropSlot(
-                    new Vector3(
-                        0.42f,
-                        0f,
-                        -0.02f),
-                    15f);
-
-
             if (
                 stableCategory ==
                 DeskPropCategory.Laptop)
             {
                 stableSlot =
-                    laptop;
+                    new DeskPropSlot(
+                        new Vector3(
+                            0.00f,
+                            0f,
+                            0.10f),
+                        -4f);
 
                 originalSlot =
-                    mouse;
+                    new DeskPropSlot(
+                        new Vector3(
+                            0.42f,
+                            0f,
+                            -0.02f),
+                        15f);
             }
             else
             {
                 stableSlot =
-                    mouse;
+                    new DeskPropSlot(
+                        new Vector3(
+                            -0.42f,
+                            0f,
+                            -0.02f),
+                        15f);
 
                 originalSlot =
-                    laptop;
+                    new DeskPropSlot(
+                        new Vector3(
+                            0.00f,
+                            0f,
+                            0.10f),
+                        -4f);
             }
 
             return;
@@ -916,6 +966,123 @@ public sealed class ExperimentBootstrap : MonoBehaviour
             tableTopBounds.max.x.ToString("F3") +
             "]");
 
+
+        return finalLocalPosition;
+    }
+
+    // ================================================================
+    // 距离减小位置计算：仅移动一个物体，并保留物体之间的安全间隙。
+    // ================================================================
+
+    private static Vector3 ResolveDistanceDecreasePosition(
+        GameObject movingProp,
+        GameObject stationaryProp,
+        Transform propRoot,
+        Vector3 movingInitialLocalPosition,
+        Vector3 stationaryInitialLocalPosition)
+    {
+        Bounds movingBounds;
+        Bounds stationaryBounds;
+        bool hasMovingBounds =
+            TryGetRendererBounds(
+                movingProp,
+                out movingBounds);
+        bool hasStationaryBounds =
+            TryGetRendererBounds(
+                stationaryProp,
+                out stationaryBounds);
+
+        float movingWorldX =
+            propRoot
+                .TransformPoint(
+                    movingInitialLocalPosition)
+                .x;
+        float stationaryWorldX =
+            propRoot
+                .TransformPoint(
+                    stationaryInitialLocalPosition)
+                .x;
+
+        float movingMinX =
+            hasMovingBounds
+                ? movingBounds.min.x
+                : movingWorldX -
+                  DistanceIncreaseFallbackHalfExtentX;
+        float movingMaxX =
+            hasMovingBounds
+                ? movingBounds.max.x
+                : movingWorldX +
+                  DistanceIncreaseFallbackHalfExtentX;
+        float stationaryMinX =
+            hasStationaryBounds
+                ? stationaryBounds.min.x
+                : stationaryWorldX -
+                  DistanceIncreaseFallbackHalfExtentX;
+        float stationaryMaxX =
+            hasStationaryBounds
+                ? stationaryBounds.max.x
+                : stationaryWorldX +
+                  DistanceIncreaseFallbackHalfExtentX;
+
+        float actualDelta;
+        if (movingWorldX < stationaryWorldX)
+        {
+            float maximumRightDelta =
+                stationaryMinX -
+                DistanceDecreaseMinimumGap -
+                movingMaxX;
+            actualDelta =
+                Mathf.Min(
+                    DistanceDecreaseDesiredMove,
+                    Mathf.Max(
+                        0f,
+                        maximumRightDelta));
+        }
+        else
+        {
+            float maximumLeftMagnitude =
+                movingMinX -
+                DistanceDecreaseMinimumGap -
+                stationaryMaxX;
+            actualDelta =
+                -Mathf.Min(
+                    DistanceDecreaseDesiredMove,
+                    Mathf.Max(
+                        0f,
+                        maximumLeftMagnitude));
+        }
+
+        Vector3 initialWorldPosition =
+            propRoot.TransformPoint(
+                movingInitialLocalPosition);
+        Vector3 finalWorldPosition =
+            initialWorldPosition +
+            new Vector3(
+                actualDelta,
+                0f,
+                0f);
+        Vector3 finalLocalPosition =
+            propRoot.InverseTransformPoint(
+                finalWorldPosition);
+
+        Debug.Log(
+            "DistanceDecrease object=" +
+            movingProp.name +
+            ", stationary=" +
+            stationaryProp.name +
+            ", requested=" +
+            DistanceDecreaseDesiredMove.ToString("F3") +
+            ", actual=" +
+            actualDelta.ToString("F3") +
+            ", movingBoundsX=[" +
+            movingMinX.ToString("F3") +
+            ", " +
+            movingMaxX.ToString("F3") +
+            "], stationaryBoundsX=[" +
+            stationaryMinX.ToString("F3") +
+            ", " +
+            stationaryMaxX.ToString("F3") +
+            "]");
 
         return finalLocalPosition;
     }

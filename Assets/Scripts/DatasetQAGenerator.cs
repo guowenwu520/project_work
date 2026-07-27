@@ -14,6 +14,8 @@ public static class DatasetQAGenerator
             throw new ArgumentNullException("job");
         }
 
+        ValidateCanonicalChangedSlot(job);
+
         System.Random random =
             new System.Random(unchecked(job.seed ^ 0x5F3759DF));
 
@@ -56,7 +58,12 @@ public static class DatasetQAGenerator
                 continue;
             }
 
-            result.Add(new DatasetQaPair(question, answer));
+            result.Add(
+                new DatasetQaPair(
+                    question,
+                    answer,
+                    NormalizeQuestionType(
+                        template.answer_style)));
         }
 
         if (result.Count != targetCount)
@@ -76,6 +83,42 @@ public static class DatasetQAGenerator
         return result;
     }
 
+    private static void ValidateCanonicalChangedSlot(BatchJob job)
+    {
+        string expected =
+            BatchConfiguration.GetCanonicalChangedSlot(job.changeType);
+        string actual = (job.changedSlot ?? string.Empty).Trim();
+        if (!string.Equals(
+                actual,
+                expected,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Change type '" +
+                job.changeType +
+                "' must use changedSlot='" +
+                expected +
+                "', but the job uses '" +
+                actual +
+                "'. The fixed QA wording would not match the rendered " +
+                "first-view/second-view positions.");
+        }
+    }
+
+    private static string NormalizeQuestionType(string value)
+    {
+        string key = (value ?? string.Empty)
+            .Trim()
+            .ToLowerInvariant()
+            .Replace('-', '_')
+            .Replace(' ', '_');
+
+        return key == "yes_no" ||
+               key == "yes_or_no"
+            ? "yes_or_no"
+            : "descriptive";
+    }
+
     private static Dictionary<string, string> BuildContext(
         BatchJob job,
         System.Random random)
@@ -83,24 +126,19 @@ public static class DatasetQAGenerator
         Dictionary<string, string> values =
             new Dictionary<string, string>(StringComparer.Ordinal);
 
-        Put(values, "initial_count", "2");
-        Put(values, "final_count", "2");
+        Put(
+            values,
+            "view_a_count",
+            job.InitialObjectCount.ToString());
+        Put(
+            values,
+            "view_b_count",
+            job.FinalObjectCount.ToString());
 
         DatasetObjectState leftBefore = job.leftBefore;
         DatasetObjectState rightBefore = job.rightBefore;
         DatasetObjectState leftAfter = job.leftAfter;
         DatasetObjectState rightAfter = job.rightAfter;
-
-        Put(values, "object_a", Description(leftBefore));
-        Put(values, "object_b", Description(rightBefore));
-
-        Put(
-            values,
-            "final_object_list",
-            "The " +
-            Description(rightAfter) +
-            " and the " +
-            Description(leftAfter));
 
         if (string.Equals(
             job.changeType,
@@ -112,32 +150,23 @@ public static class DatasetQAGenerator
                 changedLeft ? leftBefore : rightBefore;
             DatasetObjectState after =
                 changedLeft ? leftAfter : rightAfter;
+            DatasetObjectState unchangedBefore =
+                changedLeft ? rightBefore : leftBefore;
+            DatasetObjectState unchangedAfter =
+                changedLeft ? rightAfter : leftAfter;
 
-            Put(values, "old_object", Description(before));
-            Put(values, "new_object", Description(after));
+            Put(values, "view_a_object_a", Description(before));
+            Put(values, "view_b_object_a", Description(after));
             Put(
                 values,
-                "initial_position",
-                changedLeft ? LeftFirstView() : RightFirstView());
+                "view_a_object_b",
+                Description(unchangedBefore));
             Put(
                 values,
-                "final_position",
-                changedLeft ? RightSecondView() : LeftSecondView());
-        }
-        else if (string.Equals(
-            job.changeType,
-            DatasetChangeTypes.TwoObjectsReplacement,
-            StringComparison.OrdinalIgnoreCase))
-        {
-            Put(values, "old_object_1", Description(leftBefore));
-            Put(values, "new_object_1", Description(leftAfter));
-            Put(values, "old_object_2", Description(rightBefore));
-            Put(values, "new_object_2", Description(rightAfter));
-
-            Put(values, "initial_position_1", LeftFirstView());
-            Put(values, "final_position_1", RightSecondView());
-            Put(values, "initial_position_2", RightFirstView());
-            Put(values, "final_position_2", LeftSecondView());
+                "view_b_object_b",
+                Description(unchangedAfter));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_b_position_a", ViewBPositionA());
         }
         else if (string.Equals(
             job.changeType,
@@ -149,60 +178,125 @@ public static class DatasetQAGenerator
                 changedLeft ? leftBefore : rightBefore;
             DatasetObjectState after =
                 changedLeft ? leftAfter : rightAfter;
+            DatasetObjectState unchangedBefore =
+                changedLeft ? rightBefore : leftBefore;
+            DatasetObjectState unchangedAfter =
+                changedLeft ? rightAfter : leftAfter;
 
-            Put(values, "object", Label(before));
-            Put(values, "original_color", before.color);
-            Put(values, "new_color", after.color);
+            Put(values, "view_a_object_a", Label(before));
+            Put(values, "view_b_object_a", Label(after));
             Put(
                 values,
-                "initial_position",
-                changedLeft ? LeftFirstView() : RightFirstView());
+                "view_a_object_b",
+                Description(unchangedBefore));
             Put(
                 values,
-                "final_position",
-                changedLeft ? RightSecondView() : LeftSecondView());
+                "view_b_object_b",
+                Description(unchangedAfter));
+            Put(values, "view_a_color_a", ColorValue(before));
+            Put(values, "view_b_color_a", ColorValue(after));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_b_position_a", ViewBPositionA());
         }
-        else if (string.Equals(
-            job.changeType,
-            DatasetChangeTypes.DistanceIncrease,
-            StringComparison.OrdinalIgnoreCase))
+        else if (
+            string.Equals(
+                job.changeType,
+                DatasetChangeTypes.DistanceIncrease,
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                job.changeType,
+                DatasetChangeTypes.DistanceDecrease,
+                StringComparison.OrdinalIgnoreCase))
         {
-            Put(values, "initial_position_a", LeftFirstView());
-            Put(values, "initial_position_b", RightFirstView());
-            Put(values, "final_position_a", RightSecondView());
-            Put(values, "final_position_b", LeftSecondView());
+            bool movedLeft = IsLeft(job.changedSlot);
+            DatasetObjectState movingBefore =
+                movedLeft ? leftBefore : rightBefore;
+            DatasetObjectState movingAfter =
+                movedLeft ? leftAfter : rightAfter;
+            DatasetObjectState stationaryBefore =
+                movedLeft ? rightBefore : leftBefore;
+            DatasetObjectState stationaryAfter =
+                movedLeft ? rightAfter : leftAfter;
+
+            Put(values, "view_a_object_a", Description(movingBefore));
+            Put(values, "view_a_object_b", Description(stationaryBefore));
+            Put(values, "view_b_object_a", Description(movingAfter));
+            Put(values, "view_b_object_b", Description(stationaryAfter));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_a_position_b", ViewAPositionB());
+            Put(values, "view_b_position_a", ViewBPositionA());
+            Put(values, "view_b_position_b", ViewBPositionB());
         }
         else if (string.Equals(
             job.changeType,
             DatasetChangeTypes.SwapPositions,
             StringComparison.OrdinalIgnoreCase))
         {
-            Put(values, "object_a_initial_position", LeftFirstView());
-            Put(values, "object_a_final_position", LeftSecondView());
-            Put(values, "object_b_initial_position", RightFirstView());
-            Put(values, "object_b_final_position", RightSecondView());
+            Put(values, "view_a_object_a", Description(leftBefore));
+            Put(values, "view_a_object_b", Description(rightBefore));
+            Put(values, "view_b_object_a", Description(rightAfter));
+            Put(values, "view_b_object_b", Description(leftAfter));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_a_position_b", ViewAPositionB());
+            Put(values, "view_b_position_a", ViewBPositionA());
+            Put(values, "view_b_position_b", ViewBPositionB());
+        }
+        else if (string.Equals(
+            job.changeType,
+            DatasetChangeTypes.ObjectAdding,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            bool addedLeft = IsLeft(job.changedSlot);
+            DatasetObjectState original =
+                addedLeft ? rightAfter : leftAfter;
+            DatasetObjectState added =
+                addedLeft ? leftAfter : rightAfter;
+
+            Put(values, "view_a_object_a", Description(original));
+            Put(values, "view_b_object_a", Description(original));
+            Put(values, "view_b_object_b", Description(added));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_b_position_a", ViewBPositionA());
+            Put(values, "view_b_position_b", ViewBPositionB());
+        }
+        else if (string.Equals(
+            job.changeType,
+            DatasetChangeTypes.ObjectDeleting,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            bool deletedLeft = IsLeft(job.changedSlot);
+            DatasetObjectState removed =
+                deletedLeft ? leftBefore : rightBefore;
+            DatasetObjectState remaining =
+                deletedLeft ? rightAfter : leftAfter;
+
+            Put(values, "view_a_object_a", Description(remaining));
+            Put(values, "view_a_object_b", Description(removed));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_a_position_b", ViewAPositionB());
+            Put(values, "view_b_object_a", Description(remaining));
+            Put(values, "view_b_position_a", ViewBPositionA());
         }
         else
         {
-            bool selectLeft = random.Next(2) == 0;
-            DatasetObjectState selected =
-                selectLeft ? leftBefore : rightBefore;
+            Put(values, "view_a_object_a", Description(leftBefore));
+            Put(values, "view_a_object_b", Description(rightBefore));
+            Put(values, "view_b_object_a", Description(leftAfter));
+            Put(values, "view_b_object_b", Description(rightAfter));
+            Put(values, "view_a_position_a", ViewAPositionA());
+            Put(values, "view_a_position_b", ViewAPositionB());
+            Put(values, "view_b_position_a", ViewBPositionA());
+            Put(values, "view_b_position_b", ViewBPositionB());
+            Put(values, "view_a_color_a", ColorValue(leftBefore));
+            Put(values, "view_b_color_a", ColorValue(leftAfter));
 
-            Put(values, "selected_object", Description(selected));
             Put(
                 values,
-                "initial_selected_position",
-                selectLeft ? LeftFirstView() : RightFirstView());
-            Put(
-                values,
-                "final_selected_position",
-                selectLeft ? RightSecondView() : LeftSecondView());
-
-            if (selected.supportsColor &&
-                !string.IsNullOrWhiteSpace(selected.color))
-            {
-                Put(values, "selected_color", selected.color);
-            }
+                "view_b_object_list",
+                "The " +
+                Description(leftAfter) +
+                " and the " +
+                Description(rightAfter));
         }
 
         return values;
@@ -337,23 +431,34 @@ public static class DatasetQAGenerator
         return state.label.Trim();
     }
 
-    private static string LeftFirstView()
+    private static string ColorValue(DatasetObjectState state)
     {
-        return "the left side of the table in the first view";
+        if (state == null ||
+            string.IsNullOrWhiteSpace(state.color))
+        {
+            return "Null";
+        }
+
+        return state.color.Trim();
     }
 
-    private static string RightFirstView()
+    private static string ViewAPositionA()
     {
-        return "the right side of the table in the first view";
+        return "the left side (1st view) of the table";
     }
 
-    private static string LeftSecondView()
+    private static string ViewAPositionB()
     {
-        return "the left side of the table in the second view";
+        return "the right side (1st view) of the table";
     }
 
-    private static string RightSecondView()
+    private static string ViewBPositionA()
     {
-        return "the right side of the table in the second view";
+        return "the right side (2nd view) of the table";
+    }
+
+    private static string ViewBPositionB()
+    {
+        return "the left side (2nd view) of the table";
     }
 }

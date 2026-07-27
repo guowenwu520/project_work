@@ -12,7 +12,9 @@ BUILD_DIR="$PROJECT_DIR/Build/Linux"
 LIGHT_BUILD_DIR="$LIGHT_PROJECT/Build/Linux"
 LOG_FILE="$PROJECT_DIR/Build/build_linux.log"
 
-SCHEMA_VERSION="${SCHEMA_VERSION:-six-change-tabletop-8qa-60pool-v7}"
+SCHEMA_VERSION="${SCHEMA_VERSION:-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13}"
+QA_WORKBOOK="$PROJECT_DIR/QAs_v5_d.xlsx"
+QA_REGENERATOR="$PROJECT_DIR/Tools/regenerate_existing_qa.py"
 QA_SOURCE="$PROJECT_DIR/Assets/StreamingAssets/tabletop_qa_templates.json"
 QA_DEST="$BUILD_DIR/ChangeBlindnessRoom_Data/StreamingAssets/tabletop_qa_templates.json"
 PLAYER="$BUILD_DIR/ChangeBlindnessRoom.x86_64"
@@ -89,6 +91,19 @@ fi
 require_directory "$PROJECT_DIR/Assets"
 require_directory "$PROJECT_DIR/Packages"
 require_directory "$PROJECT_DIR/ProjectSettings"
+require_file "$QA_WORKBOOK"
+require_file "$QA_REGENERATOR"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 is required to synchronize the QA workbook." >&2
+  exit 1
+fi
+
+echo "Synchronizing runtime QA from QAs_v5_d.xlsx..."
+python3 "$QA_REGENERATOR" \
+  --workbook "$QA_WORKBOOK" \
+  --templates "$QA_SOURCE" \
+  --sync-templates-only
 require_file "$QA_SOURCE"
 
 mkdir -p \

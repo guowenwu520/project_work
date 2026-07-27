@@ -33,7 +33,7 @@
         },
         {
             "name": "dragon",
-            "displayName": "Dragon",
+            "displayName": "dragon",
             "bundleFile": "modelpack_0000.bundle",
             "assetName": "assets/modelpacks/generated/dragon.prefab"
         },
@@ -63,7 +63,7 @@
         },
         {
             "name": "keyboard",
-            "displayName": "Keyboard",
+            "displayName": "keyboard",
             "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/keyboard.prefab"
         },
@@ -75,7 +75,7 @@
         },
         {
             "name": "mouse",
-            "displayName": "Mouse",
+            "displayName": "mouse",
             "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/mouse.prefab"
         },
@@ -98,12 +98,6 @@
             "assetName": "assets/modelpacks/generated/ornament.prefab"
         },
         {
-            "name": "Pistol",
-            "displayName": "Pistol",
-            "bundleFile": "modelpack_0001.bundle",
-            "assetName": "assets/modelpacks/generated/pistol.prefab"
-        },
-        {
             "name": "Rockery",
             "displayName": "Rockery",
             "bundleFile": "modelpack_0001.bundle",
@@ -117,14 +111,14 @@
         },
         {
             "name": "starbuacks",
-            "displayName": "Starbuacks",
+            "displayName": "starbuacks",
             "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/starbuacks.prefab"
         },
         {
             "name": "StuffedBear",
             "displayName": "StuffedBear",
-            "bundleFile": "modelpack_0002.bundle",
+            "bundleFile": "modelpack_0001.bundle",
             "assetName": "assets/modelpacks/generated/stuffedbear.prefab"
         },
         {

@@ -1,0 +1,50 @@
+Base repository: https://github.com/guowenwu520/project_work.git
+Base branch: master
+Base commit: d44a290f4c78a787cd772b9d4f4c07de30a897d1
+
+Apply:
+1. Extract this archive over a checkout of the base repository.
+2. Rebuild the Linux Player because the dataset schema is now:
+   eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13
+3. Run the exact minimum coverage test:
+   QA_ONLY=1 ./Tools/test_all_cases.sh
+4. Run the full exact-minimum render by omitting QA_ONLY:
+   ./Tools/test_all_cases.sh
+
+Tools/test_all_cases.sh is the only retained test script.
+
+Authoritative workbook:
+QAs_v5_d.xlsx
+SHA-256:
+a987fa1fad75702ecd364c7dbf4643401d6546b15fc04a9227fb6a9e0d5e5a87
+
+Coverage:
+- QA wording comes only from sheets 01-08; ALL and other tabs are excluded
+- 374 authoritative templates total
+- 8 QA pairs per scene
+- Per-type counts: 58, 59, 30, 30, 60, 59, 39, 39
+- Exact minimum total: 50 scenes
+
+JSON additions:
+- video: duplicates video_path for the requested output schema
+- metadata: complete view-A/view-B position, color, count, and change flags
+- metadata color arrays use "Null" for a present object without color
+- questions[].question_type: descriptive or yes_or_no
+- Variables includes every currently supported QA placeholder
+- QA position variables use the fixed typical English values
+- Physical slot A is first-view left / second-view right
+- Physical slot B is first-view right / second-view left
+- Replacement, color, and distance changes affect A only
+- Addition and deletion affect B only
+- regenerate_existing_qa.py rejects old videos whose changed slot or
+  before/after state conflicts with the fixed sheet wording
+- QAs_v5_d.xlsx is now the only QA editing source
+- build_linux.sh automatically regenerates tabletop_qa_templates.json
+- run_dataset.sh, test_all_cases.sh, and regenerate_existing_qa.py also
+  synchronize the workbook before using QA
+- editing existing questions/answers/types takes effect without code changes
+- adding a new placeholder variable is rejected until scene code supports it
+
+The authoritative workbook questions and answers were not rewritten.
+
+The unrelated working-tree file Assets/RawModels/Dragon.glb is not included.

@@ -9,17 +9,611 @@ import hashlib
 import json
 import random
 import os
+import posixpath
 import re
 import shutil
 import sys
+import zipfile
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 
 PLACEHOLDER_RE = re.compile(r"\{([A-Za-z0-9_]+)\}")
 QA_XOR = 0x5F3759DF
+XLSX_MAIN_NS = (
+    "http://schemas.openxmlformats.org/"
+    "spreadsheetml/2006/main"
+)
+XLSX_REL_NS = (
+    "http://schemas.openxmlformats.org/"
+    "officeDocument/2006/relationships"
+)
+XLSX_PACKAGE_REL_NS = (
+    "http://schemas.openxmlformats.org/"
+    "package/2006/relationships"
+)
+
+QA_SOURCE_SHEETS = [
+    {
+        "sheet_name": "01_Replacement",
+        "change_type": "one_object_replacement",
+        "prefix": "replacement",
+        "name_cn": "物体替换",
+        "description": (
+            "One object is replaced while the other object "
+            "remains unchanged."
+        ),
+    },
+    {
+        "sheet_name": "02_Color_Change",
+        "change_type": "same_object_color_change",
+        "prefix": "color_change",
+        "name_cn": "颜色变化",
+        "description": "One object changes color.",
+    },
+    {
+        "sheet_name": "03_Distance_Increase",
+        "change_type": "distance_increase",
+        "prefix": "distance_increase",
+        "name_cn": "距离增大",
+        "description": (
+            "One object moves and the distance between the two "
+            "objects increases."
+        ),
+    },
+    {
+        "sheet_name": "04_Distance_Decrease",
+        "change_type": "distance_decrease",
+        "prefix": "distance_decrease",
+        "name_cn": "距离减小",
+        "description": (
+            "One object moves and the distance between the two "
+            "objects decreases."
+        ),
+    },
+    {
+        "sheet_name": "05_Position_Swap",
+        "change_type": "swap_positions",
+        "prefix": "swap_positions",
+        "name_cn": "位置交换",
+        "description": "Two objects exchange positions.",
+    },
+    {
+        "sheet_name": "06_No_Change",
+        "change_type": "no_change",
+        "prefix": "no_change",
+        "name_cn": "无变化",
+        "description": "The tabletop state remains unchanged.",
+    },
+    {
+        "sheet_name": "07_Object_Adding",
+        "change_type": "object_adding",
+        "prefix": "object_adding",
+        "name_cn": "增加物体",
+        "description": (
+            "One object is added, changing the count from one to two."
+        ),
+    },
+    {
+        "sheet_name": "08_Object_Deleting",
+        "change_type": "object_deleting",
+        "prefix": "object_deleting",
+        "name_cn": "减少物体",
+        "description": (
+            "One object is removed, changing the count from two to one."
+        ),
+    },
+]
+
+SUPPORTED_QA_VARIABLES = {
+    "view_a_object_a",
+    "view_b_object_a",
+    "view_a_object_b",
+    "view_b_object_b",
+    "view_a_color_a",
+    "view_b_color_a",
+    "view_a_count",
+    "view_b_count",
+    "view_a_position_a",
+    "view_b_position_a",
+    "view_a_position_b",
+    "view_b_position_b",
+    "view_a_object_list",
+    "view_b_object_list",
+}
+
+FIXED_POSITION_VALUES = {
+    "view_a_position_a":
+        "the left side (1st view) of the table",
+    "view_a_position_b":
+        "the right side (1st view) of the table",
+    "view_b_position_a":
+        "the right side (2nd view) of the table",
+    "view_b_position_b":
+        "the left side (2nd view) of the table",
+}
+
+
+def xlsx_cell_column(reference: str) -> int:
+    match = re.match(r"([A-Za-z]+)", reference or "")
+    if not match:
+        return 0
+
+    index = 0
+    for char in match.group(1).upper():
+        index = index * 26 + ord(char) - ord("A") + 1
+    return max(0, index - 1)
+
+
+def xlsx_rich_text(element: ElementTree.Element | None) -> str:
+    if element is None:
+        return ""
+    return "".join(
+        node.text or ""
+        for node in element.iter(
+            f"{{{XLSX_MAIN_NS}}}t"
+        )
+    )
+
+
+def read_xlsx_rows(
+    workbook_path: Path,
+) -> tuple[list[str], dict[str, list[list[str]]]]:
+    """Read the simple text tables used by the QA workbook.
+
+    This uses only Python's standard library so the build server does not
+    need openpyxl, LibreOffice, Node.js, or another generated helper script.
+    """
+
+    try:
+        archive = zipfile.ZipFile(workbook_path)
+    except (OSError, zipfile.BadZipFile) as error:
+        raise ValueError(
+            f"Invalid XLSX workbook: {workbook_path}: {error}"
+        ) from error
+
+    with archive:
+        try:
+            workbook_xml = ElementTree.fromstring(
+                archive.read("xl/workbook.xml")
+            )
+            relationships_xml = ElementTree.fromstring(
+                archive.read(
+                    "xl/_rels/workbook.xml.rels"
+                )
+            )
+        except (KeyError, ElementTree.ParseError) as error:
+            raise ValueError(
+                f"XLSX workbook structure is invalid: "
+                f"{workbook_path}: {error}"
+            ) from error
+
+        shared_strings: list[str] = []
+        if "xl/sharedStrings.xml" in archive.namelist():
+            shared_root = ElementTree.fromstring(
+                archive.read("xl/sharedStrings.xml")
+            )
+            shared_strings = [
+                xlsx_rich_text(item)
+                for item in shared_root.findall(
+                    f"{{{XLSX_MAIN_NS}}}si"
+                )
+            ]
+
+        relationship_targets = {
+            relation.get("Id", ""):
+            relation.get("Target", "")
+            for relation in relationships_xml.findall(
+                f"{{{XLSX_PACKAGE_REL_NS}}}Relationship"
+            )
+        }
+
+        sheet_names: list[str] = []
+        rows_by_sheet: dict[str, list[list[str]]] = {}
+        sheets_node = workbook_xml.find(
+            f"{{{XLSX_MAIN_NS}}}sheets"
+        )
+        if sheets_node is None:
+            raise ValueError(
+                f"XLSX workbook contains no sheets: {workbook_path}"
+            )
+
+        for sheet in sheets_node.findall(
+            f"{{{XLSX_MAIN_NS}}}sheet"
+        ):
+            sheet_name = str(sheet.get("name") or "").strip()
+            relationship_id = sheet.get(
+                f"{{{XLSX_REL_NS}}}id",
+                "",
+            )
+            target = relationship_targets.get(
+                relationship_id,
+                "",
+            )
+            if not sheet_name or not target:
+                continue
+
+            if target.startswith("/"):
+                sheet_member = target.lstrip("/")
+            elif target.startswith("xl/"):
+                sheet_member = target
+            else:
+                sheet_member = posixpath.normpath(
+                    posixpath.join("xl", target)
+                )
+
+            try:
+                sheet_root = ElementTree.fromstring(
+                    archive.read(sheet_member)
+                )
+            except (KeyError, ElementTree.ParseError) as error:
+                raise ValueError(
+                    f"Cannot read sheet {sheet_name!r} from "
+                    f"{workbook_path}: {error}"
+                ) from error
+
+            row_values: dict[int, dict[int, str]] = {}
+            for row in sheet_root.findall(
+                ".//"
+                f"{{{XLSX_MAIN_NS}}}sheetData/"
+                f"{{{XLSX_MAIN_NS}}}row"
+            ):
+                row_number = int(row.get("r") or 0)
+                if row_number <= 0:
+                    continue
+                values: dict[int, str] = {}
+                for cell in row.findall(
+                    f"{{{XLSX_MAIN_NS}}}c"
+                ):
+                    column = xlsx_cell_column(
+                        cell.get("r") or ""
+                    )
+                    cell_type = cell.get("t") or ""
+                    value_node = cell.find(
+                        f"{{{XLSX_MAIN_NS}}}v"
+                    )
+                    raw = (
+                        value_node.text
+                        if value_node is not None and
+                        value_node.text is not None
+                        else ""
+                    )
+
+                    if cell_type == "s" and raw:
+                        try:
+                            value = shared_strings[int(raw)]
+                        except (ValueError, IndexError) as error:
+                            raise ValueError(
+                                f"{sheet_name}!{cell.get('r')}: "
+                                "invalid shared-string index"
+                            ) from error
+                    elif cell_type == "inlineStr":
+                        value = xlsx_rich_text(
+                            cell.find(
+                                f"{{{XLSX_MAIN_NS}}}is"
+                            )
+                        )
+                    elif cell_type == "b":
+                        value = "true" if raw == "1" else "false"
+                    else:
+                        value = raw
+
+                    values[column] = value
+                row_values[row_number] = values
+
+            max_row = max(row_values, default=0)
+            max_column = max(
+                (
+                    max(values, default=-1)
+                    for values in row_values.values()
+                ),
+                default=-1,
+            )
+            matrix: list[list[str]] = []
+            for row_number in range(1, max_row + 1):
+                values = row_values.get(row_number, {})
+                matrix.append(
+                    [
+                        values.get(column, "")
+                        for column in range(max_column + 1)
+                    ]
+                )
+
+            sheet_names.append(sheet_name)
+            rows_by_sheet[sheet_name] = matrix
+
+    return sheet_names, rows_by_sheet
+
+
+def unique_placeholders(
+    question: str,
+    answer: str,
+) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for text in (question, answer):
+        for match in PLACEHOLDER_RE.finditer(text):
+            name = match.group(1)
+            if name not in seen:
+                seen.add(name)
+                values.append(name)
+    return values
+
+
+def normalize_sequence(value: Any, fallback: int) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return str(fallback)
+    if re.fullmatch(r"[0-9]+(?:\.0+)?", text):
+        return str(int(float(text)))
+    return text
+
+
+def build_runtime_library_from_workbook(
+    workbook_path: Path,
+    template_path: Path,
+) -> dict[str, Any]:
+    sheet_names, rows_by_sheet = read_xlsx_rows(
+        workbook_path
+    )
+    required_sheet_names = [
+        source["sheet_name"]
+        for source in QA_SOURCE_SHEETS
+    ]
+    missing_sheets = [
+        name
+        for name in required_sheet_names + ["Variables"]
+        if name not in rows_by_sheet
+    ]
+    if missing_sheets:
+        raise ValueError(
+            "The QA workbook is missing required sheets: "
+            + ", ".join(missing_sheets)
+        )
+
+    variable_definitions: list[dict[str, str]] = []
+    variable_rows = rows_by_sheet["Variables"]
+    for row_number, row in enumerate(
+        variable_rows[3:],
+        start=4,
+    ):
+        values = list(row) + ["", "", "", ""]
+        variable = str(values[0] or "").strip()
+        if not variable:
+            continue
+        variable_definitions.append(
+            {
+                "variable": variable,
+                "english_meaning":
+                    str(values[1] or "").strip(),
+                "typical_english_value":
+                    str(values[2] or "").strip(),
+                "note": str(values[3] or "").strip(),
+                "source_row": row_number,
+            }
+        )
+
+    typical_values = {
+        item["variable"]: item["typical_english_value"]
+        for item in variable_definitions
+        if item["variable"] in SUPPORTED_QA_VARIABLES
+    }
+
+    groups: list[dict[str, Any]] = []
+    source_qa_core: list[dict[str, Any]] = []
+    used_placeholders: set[str] = set()
+
+    for source in QA_SOURCE_SHEETS:
+        sheet_name = source["sheet_name"]
+        rows = rows_by_sheet[sheet_name]
+        templates: list[dict[str, Any]] = []
+
+        for row_number, row in enumerate(
+            rows[1:],
+            start=2,
+        ):
+            values = list(row) + ["", "", "", "", ""]
+            question = str(values[3] or "")
+            answer = str(values[4] or "")
+            if not question.strip() and not answer.strip():
+                continue
+            if not question.strip() or not answer.strip():
+                raise ValueError(
+                    f"{sheet_name} row {row_number} must contain "
+                    "both an English question and an English answer."
+                )
+
+            sequence = normalize_sequence(
+                values[1],
+                len(templates) + 1,
+            )
+            template_id = (
+                f"{source['prefix']}_{sequence.zfill(2)}"
+            )
+            answer_style = str(
+                values[2] or "descriptive"
+            ).strip()
+            normalized_style = normalize_question_type(
+                answer_style
+            )
+            if answer_style.strip().lower().replace(
+                "-",
+                "_",
+            ).replace(" ", "_") not in {
+                "descriptive",
+                "yes_no",
+                "yes_or_no",
+            }:
+                raise ValueError(
+                    f"{sheet_name} row {row_number} has unsupported "
+                    f"answer type {answer_style!r}."
+                )
+
+            required_variables = unique_placeholders(
+                question,
+                answer,
+            )
+            used_placeholders.update(required_variables)
+            template = {
+                "template_id": template_id,
+                "question": question,
+                "answer": answer,
+                "required_variables": required_variables,
+                "answer_style": (
+                    "yes_no"
+                    if normalized_style == "yes_or_no"
+                    else "descriptive"
+                ),
+                "source_sheet": sheet_name,
+                "source_row": row_number,
+            }
+            templates.append(template)
+            source_qa_core.append(
+                {
+                    "change_type": source["change_type"],
+                    "template_id": template_id,
+                    "question": question,
+                    "answer": answer,
+                    "answer_style": template["answer_style"],
+                    "source_sheet": sheet_name,
+                    "source_row": row_number,
+                }
+            )
+
+        template_ids = [
+            template["template_id"]
+            for template in templates
+        ]
+        if len(template_ids) != len(set(template_ids)):
+            raise ValueError(
+                f"{sheet_name} contains duplicate template IDs."
+            )
+        if len(templates) < 8:
+            raise ValueError(
+                f"{sheet_name} contains only {len(templates)} "
+                "templates; at least 8 are required."
+            )
+
+        groups.append(
+            {
+                "change_type": source["change_type"],
+                "name_cn": source["name_cn"],
+                "description": source["description"],
+                "source_sheet": sheet_name,
+                "templates": templates,
+            }
+        )
+
+    unsupported_variables = sorted(
+        used_placeholders - SUPPORTED_QA_VARIABLES
+    )
+    if unsupported_variables:
+        raise ValueError(
+            "The workbook uses new QA variables that the current "
+            "scene code does not support: "
+            + ", ".join(unsupported_variables)
+            + ". Update the code before adding new variables."
+        )
+
+    missing_variables = sorted(
+        name
+        for name in used_placeholders
+        if not typical_values.get(name)
+    )
+    if missing_variables:
+        raise ValueError(
+            "Variables is missing a typical English value for: "
+            + ", ".join(missing_variables)
+        )
+
+    for name, expected in FIXED_POSITION_VALUES.items():
+        if typical_values.get(name) != expected:
+            raise ValueError(
+                f"Variables!{name} must remain {expected!r}; "
+                f"found {typical_values.get(name)!r}."
+            )
+
+    template_counts = {
+        group["change_type"]: len(group["templates"])
+        for group in groups
+    }
+    total_templates = sum(template_counts.values())
+    source_qa_payload = json.dumps(
+        source_qa_core,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    source_qa_sha256 = hashlib.sha256(
+        source_qa_payload
+    ).hexdigest()
+    source_sheets_payload = json.dumps(
+        [
+            {
+                "sheet": source["sheet_name"],
+                "rows": template_counts[source["change_type"]],
+            }
+            for source in QA_SOURCE_SHEETS
+        ],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    source_sheets_sha256 = hashlib.sha256(
+        source_sheets_payload
+    ).hexdigest()
+    workbook_sha256 = hashlib.sha256(
+        workbook_path.read_bytes()
+    ).hexdigest()
+
+    sampling_salt = 20260726
+    if template_path.is_file():
+        try:
+            old_library = json.loads(
+                template_path.read_text(encoding="utf-8")
+            )
+            sampling_salt = int(
+                old_library.get(
+                    "sampling_salt",
+                    sampling_salt,
+                )
+            )
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            pass
+
+    return {
+        "schema_version": "3.7",
+        "content_revision": (
+            "xlsx-auto-sync-sheet01-08-"
+            + source_qa_sha256[:16]
+        ),
+        "source_workbook": workbook_path.name,
+        "source_workbook_sha256": workbook_sha256,
+        "qa_source_policy": (
+            "Only sheets 01-08 are authoritative for QA wording."
+        ),
+        "qa_source_sheets": required_sheet_names,
+        "ignored_qa_sheets": [
+            name
+            for name in sheet_names
+            if name not in required_sheet_names
+        ],
+        "variable_source_sheet": "Variables",
+        "supported_qa_variables": sorted(
+            SUPPORTED_QA_VARIABLES
+        ),
+        "scene_type": "tabletop",
+        "questions_per_scene": 8,
+        "color_missing_value": "Null",
+        "total_templates": total_templates,
+        "template_counts": template_counts,
+        "source_qa_sha256": source_qa_sha256,
+        "source_sheets_sha256": source_sheets_sha256,
+        "typical_variable_values": typical_values,
+        "sampling_salt": sampling_salt,
+        "change_types": groups,
+    }
 
 
 def to_int32(value: int) -> int:
@@ -122,6 +716,23 @@ def parse_args() -> argparse.Namespace:
         help="Reviewed English QA library.",
     )
     parser.add_argument(
+        "--workbook",
+        default=str(project_root / "QAs_v5_d.xlsx"),
+        help=(
+            "Authoritative XLSX workbook. Sheets 01-08 supply the "
+            "exact English QA wording and Variables supplies typical "
+            "placeholder values."
+        ),
+    )
+    parser.add_argument(
+        "--sync-templates-only",
+        action="store_true",
+        help=(
+            "Validate the workbook, update the runtime QA JSON, "
+            "print its coverage, and exit without reading videos."
+        ),
+    )
+    parser.add_argument(
         "--sampling-salt",
         type=int,
         default=None,
@@ -160,23 +771,219 @@ def normalize_change_type(value: Any) -> str:
     aliases = {
         "single_object_replacement": "one_object_replacement",
         "one_object_replacement": "one_object_replacement",
-        "double_object_replacement": "two_objects_replacement",
-        "two_object_replacement": "two_objects_replacement",
-        "two_objects_replacement": "two_objects_replacement",
         "color_change": "same_object_color_change",
         "same_object_color_change": "same_object_color_change",
         "distance_increase": "distance_increase",
+        "distance_decrease": "distance_decrease",
         "position_swap": "swap_positions",
         "swap_position": "swap_positions",
         "swap_positions": "swap_positions",
         "none": "no_change",
         "no_change": "no_change",
+        "object_addition": "object_adding",
+        "object_adding": "object_adding",
+        "object_removal": "object_deleting",
+        "object_deleting": "object_deleting",
     }
     return aliases.get(key, key)
 
 
+def expected_changed_slot(change_type: Any) -> str:
+    normalized = normalize_change_type(change_type)
+    if normalized in {
+        "object_adding",
+        "object_deleting",
+    }:
+        return "right"
+    if normalized == "swap_positions":
+        return "both"
+    if normalized == "no_change":
+        return "none"
+    if normalized in {
+        "one_object_replacement",
+        "same_object_color_change",
+        "distance_increase",
+        "distance_decrease",
+    }:
+        return "left"
+    raise ValueError(
+        f"Unsupported change type {change_type!r}."
+    )
+
+
+def comparable_state(state: Any) -> tuple[Any, ...]:
+    state = state if isinstance(state, dict) else {}
+    return (
+        bool(state.get("present", True)) if state else False,
+        str(state.get("propClass") or "").strip().casefold(),
+        str(state.get("label") or "").strip().casefold(),
+        str(state.get("color") or "").strip().casefold(),
+        bool(state.get("supportsColor", False)),
+    )
+
+
+def validate_scene_correspondence(
+    annotation: dict[str, Any],
+    source: Path,
+) -> None:
+    change_type = normalize_change_type(
+        annotation.get("changeType")
+    )
+    expected_slot = expected_changed_slot(change_type)
+    actual_slot = str(
+        annotation.get("changedSlot") or ""
+    ).strip().lower()
+    if actual_slot != expected_slot:
+        raise ValueError(
+            f"{source}: changeType={change_type!r} must use "
+            f"changedSlot={expected_slot!r}, not {actual_slot!r}. "
+            "The fixed sheet wording maps physical left to position A "
+            "(left in the first view, right in the second view) and "
+            "physical right to position B (right in the first view, "
+            "left in the second view). QA-only regeneration cannot "
+            "repair a video rendered with the wrong changed slot; "
+            "rerender this scene."
+        )
+
+    left_before = annotation.get("leftBefore")
+    right_before = annotation.get("rightBefore")
+    left_after = annotation.get("leftAfter")
+    right_after = annotation.get("rightAfter")
+    lb = comparable_state(left_before)
+    rb = comparable_state(right_before)
+    la = comparable_state(left_after)
+    ra = comparable_state(right_after)
+
+    def present(state: Any) -> bool:
+        return isinstance(state, dict) and bool(
+            state.get("present", True)
+        )
+
+    mismatch = ""
+    if change_type == "one_object_replacement":
+        if (
+            not all(
+                present(state)
+                for state in (
+                    left_before,
+                    right_before,
+                    left_after,
+                    right_after,
+                )
+            )
+            or lb[1] == la[1]
+            or rb != ra
+        ):
+            mismatch = (
+                "only the first-view left object A must be replaced"
+            )
+    elif change_type == "same_object_color_change":
+        if (
+            not all(
+                present(state)
+                for state in (
+                    left_before,
+                    right_before,
+                    left_after,
+                    right_after,
+                )
+            )
+            or lb[1] != la[1]
+            or lb[3] == la[3]
+            or rb != ra
+        ):
+            mismatch = (
+                "only object A's color may change"
+            )
+    elif change_type in {
+        "distance_increase",
+        "distance_decrease",
+    }:
+        if (
+            not all(
+                present(state)
+                for state in (
+                    left_before,
+                    right_before,
+                    left_after,
+                    right_after,
+                )
+            )
+            or lb != la
+            or rb != ra
+        ):
+            mismatch = (
+                "object identities and colors must stay unchanged "
+                "while the first-view left object A moves"
+            )
+    elif change_type == "object_adding":
+        if (
+            not present(left_before)
+            or not present(left_after)
+            or lb != la
+            or present(right_before)
+            or not present(right_after)
+        ):
+            mismatch = (
+                "object A must remain on the first-view left and the "
+                "new object B must be added on the first-view right"
+            )
+    elif change_type == "object_deleting":
+        if (
+            not present(left_before)
+            or not present(left_after)
+            or lb != la
+            or not present(right_before)
+            or present(right_after)
+        ):
+            mismatch = (
+                "object A must remain on the first-view left and "
+                "object B must be removed from the first-view right"
+            )
+    elif change_type == "swap_positions":
+        if (
+            not all(
+                present(state)
+                for state in (
+                    left_before,
+                    right_before,
+                    left_after,
+                    right_after,
+                )
+            )
+            or lb != ra
+            or rb != la
+        ):
+            mismatch = "the two object states must exchange physical slots"
+    elif change_type == "no_change":
+        if lb != la or rb != ra:
+            mismatch = "both object states must stay unchanged"
+
+    if mismatch:
+        raise ValueError(
+            f"{source}: scene-state mismatch for "
+            f"{change_type!r}: {mismatch}. QA-only regeneration "
+            "cannot repair the rendered MP4; rerender this scene."
+        )
+
+
+def normalize_question_type(value: Any) -> str:
+    key = (
+        str(value or "")
+        .strip()
+        .lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+    )
+    if key in {"yes_no", "yes_or_no"}:
+        return "yes_or_no"
+    return "descriptive"
+
+
 def state_description(state: dict[str, Any] | None) -> str:
     state = state or {}
+    if not bool(state.get("present", True)):
+        return "no object"
     label = str(state.get("label") or "item").strip()
     color = str(state.get("color") or "").strip()
     supports_color = bool(state.get("supportsColor", False))
@@ -188,6 +995,125 @@ def state_description(state: dict[str, Any] | None) -> str:
 
 def state_label(state: dict[str, Any] | None) -> str:
     return str((state or {}).get("label") or "item").strip()
+
+
+def state_is_present(state: dict[str, Any] | None) -> bool:
+    if not isinstance(state, dict) or not state:
+        return False
+    return bool(state.get("present", True))
+
+
+def state_object_list(
+    state: dict[str, Any] | None,
+) -> list[str]:
+    if not state_is_present(state):
+        return []
+    state = state or {}
+    label = str(
+        state.get("label")
+        or state.get("propClass")
+        or ""
+    ).strip()
+    return [label] if label else []
+
+
+def state_color_list(
+    state: dict[str, Any] | None,
+) -> list[str]:
+    if not state_is_present(state):
+        return []
+    color = str((state or {}).get("color") or "").strip()
+    return [color or "Null"]
+
+
+def metadata_change_type(value: Any) -> str:
+    change_type = normalize_change_type(value)
+    return {
+        "one_object_replacement": "replacement",
+        "same_object_color_change": "color_change",
+        "distance_increase": "distance_increase",
+        "distance_decrease": "distance_decrease",
+        "swap_positions": "position_swap",
+        "no_change": "no_change",
+        "object_adding": "object_adding",
+        "object_deleting": "object_deleting",
+    }.get(change_type, change_type or "no_change")
+
+
+def build_metadata(
+    annotation: dict[str, Any],
+) -> dict[str, Any]:
+    change_type = normalize_change_type(
+        annotation.get("changeType")
+    )
+    changed_slot = str(
+        annotation.get("changedSlot") or ""
+    ).strip().lower()
+    left_before = annotation.get("leftBefore") or {}
+    right_before = annotation.get("rightBefore") or {}
+    left_after = annotation.get("leftAfter") or {}
+    right_after = annotation.get("rightAfter") or {}
+
+    initial_count = annotation.get("initialObjectCount")
+    if initial_count is None:
+        initial_count = sum(
+            state_is_present(state)
+            for state in (left_before, right_before)
+        )
+    final_count = annotation.get("finalObjectCount")
+    if final_count is None:
+        final_count = sum(
+            state_is_present(state)
+            for state in (left_after, right_after)
+        )
+
+    changed_positions: list[str] = []
+    if changed_slot == "left":
+        changed_positions.append("position_a")
+    elif changed_slot == "right":
+        changed_positions.append("position_b")
+    elif changed_slot == "both":
+        changed_positions.extend(
+            ["position_a", "position_b"]
+        )
+
+    distance_changed = change_type in {
+        "distance_increase",
+        "distance_decrease",
+    }
+    return {
+        "change_type": metadata_change_type(change_type),
+        "change_exists": change_type != "no_change",
+        "view_a_object_count": int(initial_count),
+        "view_b_object_count": int(final_count),
+        "view_a_position_a": state_object_list(left_before),
+        "view_a_position_b": state_object_list(right_before),
+        "view_b_position_a": state_object_list(left_after),
+        "view_b_position_b": state_object_list(right_after),
+        "view_a_color_a": state_color_list(left_before),
+        "view_a_color_b": state_color_list(right_before),
+        "view_b_color_a": state_color_list(left_after),
+        "view_b_color_b": state_color_list(right_after),
+        "changed_positions": changed_positions,
+        "object_replaced":
+            change_type == "one_object_replacement",
+        "object_added": change_type == "object_adding",
+        "object_removed": change_type == "object_deleting",
+        "color_changed":
+            change_type == "same_object_color_change",
+        "position_changed": change_type in {
+            "distance_increase",
+            "distance_decrease",
+            "swap_positions",
+        },
+        "distance_changed": distance_changed,
+        "distance_change":
+            "increased"
+            if change_type == "distance_increase"
+            else "decreased"
+            if change_type == "distance_decrease"
+            else "none",
+    }
 
 
 def put(
@@ -215,35 +1141,41 @@ def build_context(
         if key and text:
             context[key] = text
 
-    def left_first() -> str:
-        return "the left side of the table in the first view"
+    def view_a_position_a() -> str:
+        return "the left side (1st view) of the table"
 
-    def right_first() -> str:
-        return "the right side of the table in the first view"
+    def view_a_position_b() -> str:
+        return "the right side (1st view) of the table"
 
-    def left_second() -> str:
-        return "the left side of the table in the second view"
+    def view_b_position_a() -> str:
+        return "the right side (2nd view) of the table"
 
-    def right_second() -> str:
-        return "the right side of the table in the second view"
+    def view_b_position_b() -> str:
+        return "the left side (2nd view) of the table"
 
-    put("initial_count", "2")
-    put("final_count", "2")
+    def color_value(state: dict[str, Any]) -> str:
+        return str(state.get("color") or "").strip() or "Null"
 
     left_before = annotation.get("leftBefore") or {}
     right_before = annotation.get("rightBefore") or {}
     left_after = annotation.get("leftAfter") or {}
     right_after = annotation.get("rightAfter") or {}
 
-    put("object_a", state_description(left_before))
-    put("object_b", state_description(right_before))
-    put(
-        "final_object_list",
-        "The "
-        + state_description(right_after)
-        + " and the "
-        + state_description(left_after),
-    )
+    initial_count = annotation.get("initialObjectCount")
+    if initial_count is None:
+        initial_count = sum(
+            state_is_present(state)
+            for state in (left_before, right_before)
+        )
+    final_count = annotation.get("finalObjectCount")
+    if final_count is None:
+        final_count = sum(
+            state_is_present(state)
+            for state in (left_after, right_after)
+        )
+
+    put("view_a_count", initial_count)
+    put("view_b_count", final_count)
 
     change_type = normalize_change_type(
         annotation.get("changeType")
@@ -256,74 +1188,116 @@ def build_context(
         changed_left = is_left(changed_slot)
         before = left_before if changed_left else right_before
         after = left_after if changed_left else right_after
-
-        put("old_object", state_description(before))
-        put("new_object", state_description(after))
-        put(
-            "initial_position",
-            left_first() if changed_left else right_first(),
+        unchanged_before = (
+            right_before if changed_left else left_before
         )
-        put(
-            "final_position",
-            right_second() if changed_left else left_second(),
+        unchanged_after = (
+            right_after if changed_left else left_after
         )
 
-    elif change_type == "two_objects_replacement":
-        put("old_object_1", state_description(left_before))
-        put("new_object_1", state_description(left_after))
-        put("old_object_2", state_description(right_before))
-        put("new_object_2", state_description(right_after))
-
-        put("initial_position_1", left_first())
-        put("final_position_1", right_second())
-        put("initial_position_2", right_first())
-        put("final_position_2", left_second())
+        put("view_a_object_a", state_description(before))
+        put("view_b_object_a", state_description(after))
+        put("view_a_object_b", state_description(unchanged_before))
+        put("view_b_object_b", state_description(unchanged_after))
+        put("view_a_position_a", view_a_position_a())
+        put("view_b_position_a", view_b_position_a())
 
     elif change_type == "same_object_color_change":
         changed_left = is_left(changed_slot)
         before = left_before if changed_left else right_before
         after = left_after if changed_left else right_after
-
-        put("object", state_label(before))
-        put("original_color", before.get("color"))
-        put("new_color", after.get("color"))
-        put(
-            "initial_position",
-            left_first() if changed_left else right_first(),
+        unchanged_before = (
+            right_before if changed_left else left_before
         )
-        put(
-            "final_position",
-            right_second() if changed_left else left_second(),
+        unchanged_after = (
+            right_after if changed_left else left_after
         )
 
-    elif change_type == "distance_increase":
-        put("initial_position_a", left_first())
-        put("initial_position_b", right_first())
-        put("final_position_a", right_second())
-        put("final_position_b", left_second())
+        put("view_a_object_a", state_label(before))
+        put("view_b_object_a", state_label(after))
+        put("view_a_object_b", state_description(unchanged_before))
+        put("view_b_object_b", state_description(unchanged_after))
+        put("view_a_color_a", color_value(before))
+        put("view_b_color_a", color_value(after))
+        put("view_a_position_a", view_a_position_a())
+        put("view_b_position_a", view_b_position_a())
+
+    elif change_type in {
+        "distance_increase",
+        "distance_decrease",
+    }:
+        moved_left = is_left(changed_slot)
+        moving_before = left_before if moved_left else right_before
+        moving_after = left_after if moved_left else right_after
+        stationary_before = (
+            right_before if moved_left else left_before
+        )
+        stationary_after = (
+            right_after if moved_left else left_after
+        )
+
+        put("view_a_object_a", state_description(moving_before))
+        put("view_a_object_b", state_description(stationary_before))
+        put("view_b_object_a", state_description(moving_after))
+        put("view_b_object_b", state_description(stationary_after))
+        put("view_a_position_a", view_a_position_a())
+        put("view_a_position_b", view_a_position_b())
+        put("view_b_position_a", view_b_position_a())
+        put("view_b_position_b", view_b_position_b())
 
     elif change_type == "swap_positions":
-        put("object_a_initial_position", left_first())
-        put("object_a_final_position", left_second())
-        put("object_b_initial_position", right_first())
-        put("object_b_final_position", right_second())
+        put("view_a_object_a", state_description(left_before))
+        put("view_a_object_b", state_description(right_before))
+        put("view_b_object_a", state_description(right_after))
+        put("view_b_object_b", state_description(left_after))
+        put("view_a_position_a", view_a_position_a())
+        put("view_a_position_b", view_a_position_b())
+        put("view_b_position_a", view_b_position_a())
+        put("view_b_position_b", view_b_position_b())
+
+    elif change_type == "object_adding":
+        added_left = is_left(changed_slot)
+        original = right_after if added_left else left_after
+        added = left_after if added_left else right_after
+
+        put("view_a_object_a", state_description(original))
+        put("view_b_object_a", state_description(original))
+        put("view_b_object_b", state_description(added))
+        put("view_a_position_a", view_a_position_a())
+        put("view_b_position_a", view_b_position_a())
+        put("view_b_position_b", view_b_position_b())
+
+    elif change_type == "object_deleting":
+        deleted_left = is_left(changed_slot)
+        removed = left_before if deleted_left else right_before
+        remaining = right_after if deleted_left else left_after
+
+        put("view_a_object_a", state_description(remaining))
+        put("view_a_object_b", state_description(removed))
+        put("view_a_position_a", view_a_position_a())
+        put("view_a_position_b", view_a_position_b())
+        put("view_b_object_a", state_description(remaining))
+        put("view_b_position_a", view_b_position_a())
 
     elif change_type == "no_change":
-        select_left = random.next(2) == 0
-        selected = left_before if select_left else right_before
+        put("view_a_object_a", state_description(left_before))
+        put("view_a_object_b", state_description(right_before))
+        put("view_b_object_a", state_description(left_after))
+        put("view_b_object_b", state_description(right_after))
+        put("view_a_position_a", view_a_position_a())
+        put("view_a_position_b", view_a_position_b())
+        put("view_b_position_a", view_b_position_a())
+        put("view_b_position_b", view_b_position_b())
+        put("view_a_color_a", color_value(left_before))
+        put("view_b_color_a", color_value(left_after))
 
-        put("selected_object", state_description(selected))
         put(
-            "initial_selected_position",
-            left_first() if select_left else right_first(),
+            "view_b_object_list",
+            "The "
+            + state_description(left_after)
+            + " and the "
+            + state_description(right_after),
         )
-        put(
-            "final_selected_position",
-            right_second() if select_left else left_second(),
-        )
-
-        if bool(selected.get("supportsColor", False)):
-            put("selected_color", selected.get("color"))
 
     return context
 
@@ -402,15 +1376,12 @@ def render_template_pool(
         )
 
     rendered: list[dict[str, str]] = []
-    seen_questions: set[str] = set()
 
     for template in templates:
         question = render(template.get("question", ""), context)
         answer = render(template.get("answer", ""), context)
 
         if question is None or answer is None:
-            continue
-        if question in seen_questions:
             continue
 
         template_id = str(
@@ -421,12 +1392,14 @@ def render_template_pool(
                 f"{change_type} contains a template without template_id"
             )
 
-        seen_questions.add(question)
         rendered.append(
             {
                 "template_id": template_id,
                 "question": question,
                 "answer": answer,
+                "question_type": normalize_question_type(
+                    template.get("answer_style")
+                ),
             }
         )
 
@@ -445,7 +1418,9 @@ class BalancedCycleScheduler:
     - after video 8, the cycle is reset;
     - video 9 starts a newly shuffled cycle.
 
-    Each change type owns an independent scheduler.
+    A 30-template pool follows the same rule and completes in 4 videos
+    (30 unseen selections plus 2 repeated selections). Each change type
+    owns an independent scheduler.
     """
 
     def __init__(
@@ -496,7 +1471,6 @@ class BalancedCycleScheduler:
 
         # One scene must never contain the same rendered question twice.
         unique_entries: list[dict[str, str]] = []
-        seen_questions: set[str] = set()
         seen_ids: set[str] = set()
 
         for entry in rendered_templates:
@@ -505,11 +1479,8 @@ class BalancedCycleScheduler:
 
             if template_id in seen_ids:
                 continue
-            if question in seen_questions:
-                continue
 
             seen_ids.add(template_id)
-            seen_questions.add(question)
             unique_entries.append(entry)
 
         if len(unique_entries) < questions_per_scene:
@@ -531,6 +1502,19 @@ class BalancedCycleScheduler:
                 if entry["template_id"]
                 not in self.seen_in_cycle
             ]
+        )
+        unseen_question_counts = Counter(
+            entry["question"]
+            for entry in unseen_candidates
+        )
+        # Drain repeated source wordings across different scenes early.
+        # The prior shuffle randomizes ties, while this stable sort gives
+        # templates that share a rendered question enough separate scenes
+        # to complete the full cycle without duplicating a question inside
+        # any single scene.
+        unseen_candidates.sort(
+            key=lambda entry: unseen_question_counts[entry["question"]],
+            reverse=True,
         )
 
         for entry in unseen_candidates:
@@ -590,6 +1574,7 @@ class BalancedCycleScheduler:
             {
                 "question": entry["question"],
                 "answer": entry["answer"],
+                "question_type": entry["question_type"],
             }
             for entry in selected
         ]
@@ -647,7 +1632,10 @@ def build_qa_text(
     ]
 
     for index, pair in enumerate(qa, start=1):
-        lines.append(f"Q{index}: {pair['question']}")
+        lines.append(
+            f"Q{index} [{pair['question_type']}]: "
+            f"{pair['question']}"
+        )
         lines.append(f"A{index}: {pair['answer']}")
         lines.append("")
 
@@ -693,6 +1681,97 @@ def main() -> int:
 
     output_root = Path(args.output_root).expanduser().resolve()
     template_path = Path(args.templates).expanduser().resolve()
+    workbook_path = Path(args.workbook).expanduser().resolve()
+
+    if not workbook_path.is_file():
+        print(
+            f"QA workbook does not exist: {workbook_path}",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        library = build_runtime_library_from_workbook(
+            workbook_path,
+            template_path,
+        )
+    except (OSError, ValueError, zipfile.BadZipFile) as error:
+        print(
+            f"QA workbook validation failed: {error}",
+            file=sys.stderr,
+        )
+        return 2
+
+    template_payload = (
+        json.dumps(
+            library,
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n"
+    )
+    current_template_payload = (
+        template_path.read_text(encoding="utf-8")
+        if template_path.is_file()
+        else ""
+    )
+    templates_changed = (
+        current_template_payload != template_payload
+    )
+
+    if args.sync_templates_only:
+        if args.dry_run:
+            print(
+                "Workbook validation complete. "
+                "No file was changed."
+            )
+        else:
+            atomic_text_write(
+                template_path,
+                template_payload,
+            )
+            print(
+                "Runtime QA JSON synchronized from the workbook."
+            )
+        print(f"Workbook: {workbook_path}")
+        print(f"Runtime JSON: {template_path}")
+        print(
+            f"Templates: {library['total_templates']}"
+        )
+        print(
+            "Exact minimum scenes: "
+            + str(
+                sum(
+                    (
+                        count
+                        + int(
+                            library.get(
+                                "questions_per_scene",
+                                8,
+                            )
+                        )
+                        - 1
+                    )
+                    // int(
+                        library.get(
+                            "questions_per_scene",
+                            8,
+                        )
+                    )
+                    for count in (
+                        library.get(
+                            "template_counts",
+                            {},
+                        )
+                    ).values()
+                )
+            )
+        )
+        print(
+            "Source QA SHA-256: "
+            + str(library["source_qa_sha256"])
+        )
+        return 0
 
     if not output_root.is_dir():
         print(
@@ -701,16 +1780,6 @@ def main() -> int:
         )
         return 2
 
-    if not template_path.is_file():
-        print(
-            f"QA template file does not exist: {template_path}",
-            file=sys.stderr,
-        )
-        return 2
-
-    library = json.loads(
-        template_path.read_text(encoding="utf-8")
-    )
     questions_per_scene = int(
         library.get("questions_per_scene", 8)
     )
@@ -750,12 +1819,21 @@ def main() -> int:
     ] = []
     skipped_missing_video = 0
     counts: Counter[str] = Counter()
+    correspondence_errors: list[str] = []
 
     for annotation_path in annotation_paths:
         batch_dir = annotation_path.parent
         annotation = json.loads(
             annotation_path.read_text(encoding="utf-8")
         )
+        try:
+            validate_scene_correspondence(
+                annotation,
+                annotation_path,
+            )
+        except ValueError as error:
+            correspondence_errors.append(str(error))
+            continue
 
         video_path = (
             str(annotation.get("videoPath") or "")
@@ -799,13 +1877,37 @@ def main() -> int:
         )
         counts[change_type] += 1
 
+    if correspondence_errors:
+        print(
+            "Canonical A/B scene correspondence validation failed "
+            f"for {len(correspondence_errors)} video(s):",
+            file=sys.stderr,
+        )
+        for message in correspondence_errors:
+            print(f"  - {message}", file=sys.stderr)
+        print(
+            "No file was changed. Rerender the listed videos before "
+            "regenerating their QA.",
+            file=sys.stderr,
+        )
+        return 2
+
+    if templates_changed and not args.dry_run:
+        atomic_text_write(
+            template_path,
+            template_payload,
+        )
+        print(
+            "Runtime QA JSON synchronized from the workbook."
+        )
+
     scene_items.sort(
         key=lambda item: int(item[1].get("batchId", 0))
     )
 
     # The cycle target for each change type is the union of templates that
     # can actually be rendered by at least one completed scene in this
-    # dataset. Normally this is all 60 templates.
+    # dataset. The configured pool size comes directly from sheets 01-08.
     target_ids_by_type: dict[str, set[str]] = defaultdict(set)
     for _, _, _, change_type, rendered_templates in scene_items:
         target_ids_by_type[change_type].update(
@@ -824,7 +1926,7 @@ def main() -> int:
     }
 
     # Stage 2: process scenes in batch-id order. Every change type owns an
-    # independent 60-template cycle.
+    # independent cycle sized from its authoritative source sheet.
     prepared: list[
         tuple[
             Path,
@@ -852,10 +1954,12 @@ def main() -> int:
         video_id = f"scene_{batch_id:06d}"
         record = {
             "video_id": video_id,
+            "video": video_path,
             "video_path": video_path,
             "scene_type": str(
                 library.get("scene_type") or "tabletop"
             ),
+            "metadata": build_metadata(annotation),
             "questions": qa,
         }
 
@@ -960,6 +2064,7 @@ def main() -> int:
         selected_template_ids,
     ) in prepared:
         annotation["changeType"] = normalize_change_type(annotation.get("changeType"))
+        annotation["metadata"] = record["metadata"]
         annotation["qa"] = qa
         annotation["qaTemplateIds"] = selected_template_ids
 

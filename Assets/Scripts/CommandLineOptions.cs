@@ -6,6 +6,7 @@ public sealed class CommandLineOptions
     public int BatchIndex { get; private set; }
     public int SeedOverride { get; private set; } = int.MinValue;
     public string ForcedChangeType { get; private set; } = string.Empty;
+    public string ForcedChangedSlot { get; private set; } = string.Empty;
     public string ModelBundleDirectory { get; private set; } = string.Empty;
     public bool Capture { get; private set; }
     public bool AutoQuit { get; private set; }
@@ -31,6 +32,9 @@ public sealed class CommandLineOptions
                     break;
                 case "--change-type":
                     options.ForcedChangeType = (Next(args, ref i) ?? string.Empty).Trim();
+                    break;
+                case "--changed-slot":
+                    options.ForcedChangedSlot = (Next(args, ref i) ?? string.Empty).Trim();
                     break;
                 case "--model-bundle-dir":
                     options.ModelBundleDirectory = (Next(args, ref i) ?? string.Empty).Trim();

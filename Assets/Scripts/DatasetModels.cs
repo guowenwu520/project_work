@@ -5,11 +5,13 @@ using UnityEngine;
 public static class DatasetChangeTypes
 {
     public const string OneObjectReplacement = "one_object_replacement";
-    public const string TwoObjectsReplacement = "two_objects_replacement";
     public const string ColorChange = "same_object_color_change";
     public const string DistanceIncrease = "distance_increase";
+    public const string DistanceDecrease = "distance_decrease";
     public const string SwapPositions = "swap_positions";
     public const string NoChange = "no_change";
+    public const string ObjectAdding = "object_adding";
+    public const string ObjectDeleting = "object_deleting";
 }
 
 [Serializable]
@@ -33,11 +35,13 @@ public sealed class DatasetColorDefinition
 public sealed class DatasetChangeProbabilities
 {
     public float oneObjectReplacement = 0.25f;
-    public float twoObjectsReplacement = 0.18f;
     public float colorChange = 0.17f;
-    public float distanceIncrease = 0.15f;
+    public float distanceIncrease = 0.075f;
+    public float distanceDecrease = 0.075f;
     public float swapPositions = 0.12f;
     public float noChange = 0.13f;
+    public float objectAdding = 0.09f;
+    public float objectDeleting = 0.09f;
 }
 
 [Serializable]
@@ -57,11 +61,16 @@ public sealed class DatasetObjectState
     public string label;
     public string color;
     public bool supportsColor;
+    public bool present = true;
 
     public string Description
     {
         get
         {
+            if (!present)
+            {
+                return "no object";
+            }
             if (supportsColor && !string.IsNullOrWhiteSpace(color))
             {
                 return (color + " " + label).Trim();
@@ -78,7 +87,8 @@ public sealed class DatasetObjectState
             propClass = propClass,
             label = label,
             color = color,
-            supportsColor = supportsColor
+            supportsColor = supportsColor,
+            present = present
         };
     }
 }
@@ -119,6 +129,32 @@ public sealed class BatchJob
     {
         return string.Equals(changedSlot, "left", StringComparison.OrdinalIgnoreCase) ? rightBefore : leftBefore;
     }
+
+    public int InitialObjectCount
+    {
+        get { return CountPresent(leftBefore, rightBefore); }
+    }
+
+    public int FinalObjectCount
+    {
+        get { return CountPresent(leftAfter, rightAfter); }
+    }
+
+    private static int CountPresent(
+        DatasetObjectState first,
+        DatasetObjectState second)
+    {
+        int count = 0;
+        if (first != null && first.present)
+        {
+            count++;
+        }
+        if (second != null && second.present)
+        {
+            count++;
+        }
+        return count;
+    }
 }
 
 [Serializable]
@@ -152,11 +188,16 @@ public sealed class DatasetQaPair
 {
     public string question;
     public string answer;
+    public string question_type;
 
-    public DatasetQaPair(string q, string a)
+    public DatasetQaPair(
+        string q,
+        string a,
+        string questionType)
     {
         question = q;
         answer = a;
+        question_type = questionType;
     }
 }
 
@@ -169,10 +210,13 @@ public sealed class DatasetAnnotation
     public string videoPath;
     public string changeType;
     public string changedSlot;
+    public int initialObjectCount;
+    public int finalObjectCount;
     public DatasetObjectState leftBefore;
     public DatasetObjectState rightBefore;
     public DatasetObjectState leftAfter;
     public DatasetObjectState rightAfter;
+    public DatasetVideoMetadata metadata;
     public List<DatasetQaPair> qa = new List<DatasetQaPair>();
     public List<DatasetConversationTurn> conversations = new List<DatasetConversationTurn>();
 }

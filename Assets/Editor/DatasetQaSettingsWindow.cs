@@ -33,7 +33,7 @@ public sealed class DatasetQaSettingsWindow : EditorWindow
         scroll = EditorGUILayout.BeginScrollView(scroll);
         EditorGUILayout.LabelField("Video + QA Dataset Settings", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "All imported and built-in props are sampled from the same pool. A scene never samples the same object class twice. Built-in simple props support six change types, including color change. Imported props keep their original materials and use only the other five change types.",
+            "All imported and built-in props are sampled from the same pool. A view never contains the same object class twice. The eight change types include one-object distance increase, one-object distance decrease, 1-to-2 object adding, and 2-to-1 object deleting; simultaneous two-object replacement is not generated. Imported props keep their original materials, so color change is limited to built-in props.",
             MessageType.Info);
 
         config.baseSeed = EditorGUILayout.IntField("Base Seed", config.baseSeed);
@@ -43,13 +43,23 @@ public sealed class DatasetQaSettingsWindow : EditorWindow
         EditorGUILayout.LabelField("Change Probabilities", EditorStyles.boldLabel);
         DatasetChangeProbabilities p = config.changeProbabilities;
         p.oneObjectReplacement = EditorGUILayout.Slider("One Object Replaced", p.oneObjectReplacement, 0f, 1f);
-        p.twoObjectsReplacement = EditorGUILayout.Slider("Two Objects Replaced", p.twoObjectsReplacement, 0f, 1f);
         p.colorChange = EditorGUILayout.Slider("Built-in Object Color Change", p.colorChange, 0f, 1f);
         p.distanceIncrease = EditorGUILayout.Slider("Distance Becomes Larger", p.distanceIncrease, 0f, 1f);
+        p.distanceDecrease = EditorGUILayout.Slider("Distance Becomes Smaller", p.distanceDecrease, 0f, 1f);
         p.swapPositions = EditorGUILayout.Slider("Swap Positions", p.swapPositions, 0f, 1f);
         p.noChange = EditorGUILayout.Slider("No Change", p.noChange, 0f, 1f);
+        p.objectAdding = EditorGUILayout.Slider("Add One Object (1 -> 2)", p.objectAdding, 0f, 1f);
+        p.objectDeleting = EditorGUILayout.Slider("Delete One Object (2 -> 1)", p.objectDeleting, 0f, 1f);
 
-        float sum = p.oneObjectReplacement + p.twoObjectsReplacement + p.colorChange + p.distanceIncrease + p.swapPositions + p.noChange;
+        float sum =
+            p.oneObjectReplacement +
+            p.colorChange +
+            p.distanceIncrease +
+            p.distanceDecrease +
+            p.swapPositions +
+            p.noChange +
+            p.objectAdding +
+            p.objectDeleting;
         EditorGUILayout.LabelField("Probability Sum", sum.ToString("0.000"));
         EditorGUILayout.HelpBox("Values are normalized automatically, so the sum does not have to equal 1.", MessageType.None);
 

@@ -33,10 +33,10 @@ public sealed class TabletopQaTemplate
 }
 
 /// <summary>
-/// Loads the editable tabletop QA library from StreamingAssets.
+/// Loads the generated tabletop QA library from StreamingAssets.
 ///
-/// To add, remove, or revise questions, edit only:
-/// Assets/StreamingAssets/tabletop_qa_templates.json
+/// To revise questions, edit QAs_v5_d.xlsx. Existing project scripts
+/// synchronize sheets 01-08 and Variables into this generated JSON.
 /// </summary>
 public static class DatasetQATemplateLibrary
 {
@@ -150,17 +150,15 @@ public static class DatasetQATemplateLibrary
             case "one_object_replacement":
                 return DatasetChangeTypes.OneObjectReplacement;
 
-            case "double_object_replacement":
-            case "two_object_replacement":
-            case "two_objects_replacement":
-                return DatasetChangeTypes.TwoObjectsReplacement;
-
             case "color_change":
             case "same_object_color_change":
                 return DatasetChangeTypes.ColorChange;
 
             case "distance_increase":
                 return DatasetChangeTypes.DistanceIncrease;
+
+            case "distance_decrease":
+                return DatasetChangeTypes.DistanceDecrease;
 
             case "position_swap":
             case "swap_position":
@@ -170,6 +168,14 @@ public static class DatasetQATemplateLibrary
             case "none":
             case "no_change":
                 return DatasetChangeTypes.NoChange;
+
+            case "object_addition":
+            case "object_adding":
+                return DatasetChangeTypes.ObjectAdding;
+
+            case "object_removal":
+            case "object_deleting":
+                return DatasetChangeTypes.ObjectDeleting;
 
             default:
                 return key;

@@ -29,6 +29,7 @@ DISPLAY_HEIGHT="${DISPLAY_HEIGHT:-540}"
 PROGRESS_INTERVAL="${PROGRESS_INTERVAL:-10}"
 RANDOM_START="${RANDOM_START:-0}"
 FORCE_CHANGE_TYPE="${FORCE_CHANGE_TYPE:-}"
+FORCE_CHANGED_SLOT="${FORCE_CHANGED_SLOT:-}"
 CLEAN_OUTPUT="${CLEAN_OUTPUT:-0}"
 DELETE_FRAMES="${DELETE_FRAMES:-1}"
 CRF="${CRF:-16}"
@@ -41,8 +42,9 @@ UNITY_JOB_WORKERS="${UNITY_JOB_WORKERS:-2}"
 CLEAN_ITEM_CONFIG="${CLEAN_ITEM_CONFIG:-1}"
 SHOW_OVERALL_PROGRESS="${SHOW_OVERALL_PROGRESS:-1}"
 
-EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-six-change-tabletop-8qa-60pool-v7}"
+EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13}"
 BUILD_SCHEMA_FILE="$PROJECT_DIR/Build/Linux/dataset_schema_version.txt"
+QA_WORKBOOK="$PROJECT_DIR/QAs_v5_d.xlsx"
 QA_LIBRARY="$PROJECT_DIR/Assets/StreamingAssets/tabletop_qa_templates.json"
 QA_REGENERATOR="$PROJECT_DIR/Tools/regenerate_existing_qa.py"
 PLAYER_QA_LIBRARY="$PROJECT_DIR/Build/Linux/ChangeBlindnessRoom_Data/StreamingAssets/tabletop_qa_templates.json"
@@ -151,6 +153,18 @@ validate_environment() {
     "Missing QA library: $QA_LIBRARY"
   require_file "$QA_REGENERATOR" \
     "Missing balanced QA regenerator: $QA_REGENERATOR"
+  require_file "$QA_WORKBOOK" \
+    "Missing authoritative QA workbook: $QA_WORKBOOK"
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 is required to synchronize QAs_v5_d.xlsx."
+    exit 1
+  fi
+
+  python3 "$QA_REGENERATOR" \
+    --workbook "$QA_WORKBOOK" \
+    --templates "$QA_LIBRARY" \
+    --sync-templates-only
 
   local build_schema
   build_schema="$(tr -d '\r\n' < "$BUILD_SCHEMA_FILE")"
@@ -320,16 +334,21 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
         continue
 
     video_id = payload.get("video_id")
+    video = payload.get("video")
     video_path = payload.get("video_path")
     scene_type = payload.get("scene_type")
+    metadata = payload.get("metadata")
     questions = payload.get("questions")
 
     if (
         not isinstance(video_id, str)
         or not video_id.strip()
+        or not isinstance(video, str)
+        or not video.strip()
         or not isinstance(video_path, str)
         or not video_path.strip()
         or scene_type != "tabletop"
+        or not isinstance(metadata, dict)
         or not isinstance(questions, list)
         or len(questions) != EXPECTED_QUESTIONS
     ):
@@ -344,11 +363,16 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
             break
         question = item.get("question")
         answer = item.get("answer")
+        question_type = item.get("question_type")
         if (
             not isinstance(question, str)
             or not question.strip()
             or not isinstance(answer, str)
             or not answer.strip()
+            or question_type not in {
+                "descriptive",
+                "yes_or_no",
+            }
         ):
             normalized_questions = []
             break
@@ -356,6 +380,7 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
             {
                 "question": question.strip(),
                 "answer": answer.strip(),
+                "question_type": question_type,
             }
         )
 
@@ -369,6 +394,60 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
         continue
 
     normalized_video_path = video_path.replace("\\", "/").lstrip("/")
+    normalized_video = video.replace("\\", "/").lstrip("/")
+    if normalized_video != normalized_video_path:
+        invalid += 1
+        print(
+            f"Skipping record with inconsistent video paths: {path}",
+            file=sys.stderr,
+        )
+        continue
+
+    required_metadata = {
+        "change_type": str,
+        "change_exists": bool,
+        "view_a_object_count": int,
+        "view_b_object_count": int,
+        "view_a_position_a": list,
+        "view_a_position_b": list,
+        "view_b_position_a": list,
+        "view_b_position_b": list,
+        "view_a_color_a": list,
+        "view_a_color_b": list,
+        "view_b_color_a": list,
+        "view_b_color_b": list,
+        "changed_positions": list,
+        "object_replaced": bool,
+        "object_added": bool,
+        "object_removed": bool,
+        "color_changed": bool,
+        "position_changed": bool,
+        "distance_changed": bool,
+        "distance_change": str,
+    }
+    metadata_valid = all(
+        key in metadata
+        and isinstance(metadata[key], expected_type)
+        for key, expected_type in required_metadata.items()
+    )
+    list_fields = [
+        key
+        for key, expected_type in required_metadata.items()
+        if expected_type is list
+    ]
+    metadata_valid = metadata_valid and all(
+        all(
+            isinstance(value, str)
+            and value.strip()
+            for value in metadata[key]
+        )
+        for key in list_fields
+    )
+    if not metadata_valid:
+        invalid += 1
+        print(f"Skipping invalid metadata: {path}", file=sys.stderr)
+        continue
+
     video_file = root / normalized_video_path
     if not video_file.is_file() or video_file.stat().st_size == 0:
         missing_video += 1
@@ -376,8 +455,10 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
 
     records[normalized_video_path] = {
         "video_id": video_id.strip(),
+        "video": normalized_video_path,
         "video_path": normalized_video_path,
         "scene_type": "tabletop",
+        "metadata": metadata,
         "questions": normalized_questions,
     }
 
@@ -408,6 +489,7 @@ run_one_item() (
   local i="$1"
   local ordinal="$2"
   local current_change_type="$3"
+  local current_changed_slot="$4"
   local log_file expected_frames output_video
   local item_width item_height resolution_profile resolution_index
   local item_config player_status batch_dir final_frames batch_frames
@@ -442,6 +524,9 @@ run_one_item() (
   if [[ -n "$current_change_type" ]]; then
     echo "[item $i] Forced change type: $current_change_type"
   fi
+  if [[ -n "$current_changed_slot" ]]; then
+    echo "[item $i] Forced changed slot: $current_changed_slot"
+  fi
   echo "[item $i] Unity log: $log_file"
 
   local -a player_args=(
@@ -466,6 +551,9 @@ run_one_item() (
   fi
   if [[ -n "$current_change_type" ]]; then
     player_args+=(--change-type "$current_change_type")
+  fi
+  if [[ -n "$current_changed_slot" ]]; then
+    player_args+=(--changed-slot "$current_changed_slot")
   fi
 
   if [[ "$USE_XVFB" == "1" ]]; then
@@ -591,6 +679,7 @@ Dataset run started
   Unity jobs    : $UNITY_JOB_WORKERS per Player
   delete frames : $DELETE_FRAMES
   schema        : $SOURCE_SCHEMA
+  changed slot  : ${FORCE_CHANGED_SLOT:-canonical by change type}
   model bundles : $MODEL_BUNDLE_DIR
 INFO
 
@@ -606,7 +695,11 @@ for ((i = START_INDEX; i <= END_INDEX; i++)); do
   ordinal=$((i - START_INDEX + 1))
   current_change_type="$FORCE_CHANGE_TYPE"
 
-  run_one_item "$i" "$ordinal" "$current_change_type" &
+  run_one_item \
+    "$i" \
+    "$ordinal" \
+    "$current_change_type" \
+    "$FORCE_CHANGED_SLOT" &
   active_workers=$((active_workers + 1))
 
   if [[ "$active_workers" -ge "$WORKERS" ]]; then
