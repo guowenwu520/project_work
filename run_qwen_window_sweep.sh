@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Qwen-Image-Edit 连续 Block 窗口搜索统一运行脚本
+# Qwen-Image-Edit 连续 Block 窗口搜索：同层残差缓存 v2
 #
 # 常用命令：
 #   ./run_qwen_window_sweep.sh start
@@ -10,7 +10,8 @@ set -Eeuo pipefail
 #   ./run_qwen_window_sweep.sh stop
 #
 # 所有实验参数都可以在命令前通过环境变量覆盖，例如：
-#   SAMPLE_COUNT=2 NUM_INFERENCE_STEPS=4 ./run_qwen_window_sweep.sh start
+#   SAMPLE_COUNT=2 NUM_INFERENCE_STEPS=4 \
+#     ./run_qwen_window_sweep.sh start
 
 ACTION="${1:-start}"
 if [[ $# -gt 0 ]]; then
@@ -26,11 +27,11 @@ MODEL_PATH="${MODEL_PATH:-${PROJECT_ROOT}/models/Qwen-Image-Edit-2511}"
 DATASET_ROOT="${DATASET_ROOT:-${PROJECT_ROOT}/dataset/images1024x1024}"
 PROMPT_FILE="${PROMPT_FILE:-${PROJECT_ROOT}/portrait_prompts.md}"
 
-CUDA_DEVICES="${CUDA_DEVICES:-0,1}"
-NPROC_PER_NODE="${NPROC_PER_NODE:-2}"
+CUDA_DEVICES="${CUDA_DEVICES:-0,1,2,3}"
+NPROC_PER_NODE="${NPROC_PER_NODE:-4}"
 
 SAMPLE_COUNT="${SAMPLE_COUNT:-10}"
-WINDOW_SIZE_MIN="${WINDOW_SIZE_MIN:-3}"
+WINDOW_SIZE_MIN="${WINDOW_SIZE_MIN:-29}"
 WINDOW_SIZE_MAX="${WINDOW_SIZE_MAX:-57}"
 WINDOW_STRIDE="${WINDOW_STRIDE:-3}"
 NUM_INFERENCE_STEPS="${NUM_INFERENCE_STEPS:-40}"
@@ -38,7 +39,7 @@ PROGRESS_EVERY="${PROGRESS_EVERY:-25}"
 
 DTYPE="${DTYPE:-bf16}"
 IMAGE_FORMAT="${IMAGE_FORMAT:-png}"
-RUN_NAME="${RUN_NAME:-test_n${SAMPLE_COUNT}_steps${NUM_INFERENCE_STEPS}_w${WINDOW_SIZE_MIN}-${WINDOW_SIZE_MAX}_stride${WINDOW_STRIDE}}"
+RUN_NAME="${RUN_NAME:-residual_cache_v2_n${SAMPLE_COUNT}_steps${NUM_INFERENCE_STEPS}_w${WINDOW_SIZE_MIN}-${WINDOW_SIZE_MAX}_stride${WINDOW_STRIDE}}"
 
 OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_ROOT}/outputs/${RUN_NAME}}"
 LOG_FILE="${LOG_FILE:-${PROJECT_ROOT}/logs/${RUN_NAME}.log}"
@@ -87,11 +88,16 @@ validate_paths() {
         "批量脚本不是带进度日志的新版：${BATCH_SCRIPT}"
     grep -q -- '"--progress-every"' "$SEARCH_SCRIPT" || die \
         "搜索脚本不是带进度日志的新版：${SEARCH_SCRIPT}"
+    grep -q -- 'previous_step_same_block_residual_cache_v2' "$SEARCH_SCRIPT" || die \
+        "搜索脚本不是同层残差缓存v2：${SEARCH_SCRIPT}"
+    grep -q -- 'from qwen_edit_diagonal_bridge_search import' "$BATCH_SCRIPT" || die \
+        "批量脚本没有导入同层残差缓存v2：${BATCH_SCRIPT}"
 }
 
 print_configuration() {
     echo "============================================================"
     echo "实验名称       : $RUN_NAME"
+    echo "缓存策略       : 当前输入 + 上一步同层Block残差"
     echo "CUDA           : $CUDA_DEVICES"
     echo "进程数         : $NPROC_PER_NODE"
     echo "样本数         : $SAMPLE_COUNT"
@@ -114,7 +120,7 @@ start_run() {
     fi
 
     local existing_processes
-    existing_processes="$(pgrep -af '[q]wen_edit_batch_window_sweep.py' || true)"
+    existing_processes="$(pgrep -af '[q]wen_edit_batch_window_sweep(_residual_cache)?\\.py' || true)"
     if [[ -n "$existing_processes" ]]; then
         echo "[ERROR] 检测到其他窗口搜索任务，避免两套任务争抢GPU，本次未启动：" >&2
         echo "$existing_processes" >&2
@@ -197,7 +203,7 @@ show_status() {
 
     echo
     echo "相关进程："
-    pgrep -af '[q]wen_edit_batch_window_sweep.py|[t]orchrun' || true
+    pgrep -af '[q]wen_edit_batch_window_sweep(_residual_cache)?\\.py|[t]orchrun' || true
 
     if command -v nvidia-smi >/dev/null 2>&1; then
         echo

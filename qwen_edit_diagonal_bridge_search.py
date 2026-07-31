@@ -7,7 +7,8 @@ Qwen-Image-Edit-2511：逐 timestep 搜索连续 Block 执行窗口。
 ------------
 假设模型共有 60 个 Block：
 
-1. 第一个 timestep 强制完整执行 Block 1-60，并保存每个 Block 的双流输出。
+1. 第一个 timestep 强制完整执行 Block 1-60，并保存每个 Block 的双流层内
+   残差（Block输出减去Block输入）。
 2. 后续 timestep 的 Block 1 和 Block 60 必须执行，候选连续窗口只在
    Block 2-59 中滑动。
 3. 如果当前候选窗口为 4-8（下文均用 1-based），则当前 timestep：
@@ -15,21 +16,25 @@ Qwen-Image-Edit-2511：逐 timestep 搜索连续 Block 执行窗口。
        执行：1, 4, 5, 6, 7, 8, 60
        缓存：2, 3, 9, 10, ..., 59
 
-4. 被跳过的 Block 不再复制当前 timestep 的输入，也不使用残差插值，而是
-   读取“上一个 timestep 同编号 Block”的双流输出：
+4. 被跳过的 Block 不做跨层插值，也不读取上一个 timestep 的绝对输出。
+   它把“上一个 timestep 同编号 Block”的层内残差加到当前输入：
 
-       text_out[t, block_i]  = text_out[t-1, block_i]
-       image_out[t, block_i] = image_out[t-1, block_i]
+       text_delta[t-1, i]  = text_out[t-1, i]  - text_in[t-1, i]
+       image_delta[t-1, i] = image_out[t-1, i] - image_in[t-1, i]
 
-每个 CFG 分支维护独立缓存。某层如果连续多个 timestep 都未执行，其缓存会
-保持为该层最近一次实际执行时的输出。
+       text_out[t, i]  = text_in[t, i]  + text_delta[t-1, i]
+       image_out[t, i] = image_in[t, i] + image_delta[t-1, i]
+
+每个 CFG 分支维护独立残差缓存。某层如果连续多个 timestep 都未执行，其
+缓存保持为该层最近一次实际执行时得到的层内残差。当前 hidden 始终逐层
+向前传递，不会被上一 timestep 的绝对 hidden 覆盖。
 
 搜索过程
 --------
 1. 第一个 timestep 只完整执行，不搜索候选窗口，并建立所有 Block 缓存。
 2. 后续每个 timestep 先执行一次完整教师 Transformer。
 3. 在相同 timestep、相同 Transformer 输入上，逐个测试固定长度的连续窗口；
-   候选跳过层读取上一个教师 timestep 同编号 Block 的缓存。
+   候选跳过层使用上一个教师 timestep 同编号 Block 的层内残差。
 4. 候选与完整教师比较：
    - 最后一个 Block 的生成图 image token 相对 MSE；
    - 最后一个 Block 的 text token 相对 MSE；
@@ -77,16 +82,17 @@ except ImportError as import_error:
 
 
 TensorPair = Tuple[torch.Tensor, torch.Tensor]  # (text token, image token)
-BlockCache = Dict[int, TensorPair]
+BlockCache = Dict[int, TensorPair]  # layer -> (text residual, image residual)
 Window = Tuple[int, int]  # 0-based 闭区间
-CACHE_STRATEGY_VERSION = "previous_step_same_block_cache_v1"
+CACHE_STRATEGY_VERSION = "previous_step_same_block_residual_cache_v2"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "第一个timestep完整计算；后续逐timestep穷举连续中间Block窗口；"
-            "首尾Block必算，跳过层读取上一timestep同编号Block缓存。"
+            "首尾Block必算，跳过层把上一timestep同编号Block层内残差"
+            "加到当前输入。"
         )
     )
     parser.add_argument(
@@ -193,7 +199,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./qwen_edit_diagonal_bridge_outputs",
+        default="./qwen_edit_diagonal_bridge_residual_cache_v2_outputs",
         help="结果保存目录。",
     )
     parser.add_argument(
@@ -360,10 +366,12 @@ def install_block_policy(
     capture_all_layers: bool = False,
 ):
     """
-    executed_layers正常计算；其他层读取上一timestep同编号Block的输出。
+    executed_layers正常计算；其他层把上一timestep同编号Block的层内残差
+    加到当前输入。这样当前timestep的hidden会连续向前传播，不会被旧的
+    绝对输出覆盖。
 
-    capture_all_layers=True时记录本次forward的每层双流输出，用于建立下一
-    timestep缓存；否则只记录最后一个Block，供候选误差计算。
+    capture_all_layers=True时记录本次forward的每层双流层内残差，用于建立
+    下一timestep缓存；否则只记录最后一个Block的真实输出，供候选误差计算。
     """
     total_layers = len(transformer_blocks)
     last_layer = total_layers - 1
@@ -390,26 +398,37 @@ def install_block_policy(
         original_forward = original_block_forwards[layer_index]
 
         def policy_forward(_block_self, *positional_args, **keyword_args):
+            image_input, text_input = read_block_inputs(
+                positional_args,
+                keyword_args,
+            )
             if layer_index in executed_layers:
                 output = original_forward(*positional_args, **keyword_args)
                 text_output, image_output = split_block_output(output)
+                text_residual = text_output - text_input
+                image_residual = image_output - image_input
             else:
                 if previous_step_cache is None:
                     raise RuntimeError(
-                        f"Block {layer_index + 1}需要上一timestep缓存，"
+                        f"Block {layer_index + 1}需要上一timestep残差缓存，"
                         "但缓存尚未建立。"
                     )
-                text_output, image_output = previous_step_cache[layer_index]
+                text_residual, image_residual = previous_step_cache[layer_index]
+                text_output = text_input + text_residual
+                image_output = image_input + image_residual
                 output = (text_output, image_output)
 
-            detached_tokens = (
-                text_output.detach(),
-                image_output.detach(),
+            detached_residuals = (
+                text_residual.detach(),
+                image_residual.detach(),
             )
             if capture_all_layers:
-                captured_layers[layer_index] = detached_tokens
+                captured_layers[layer_index] = detached_residuals
             if layer_index == last_layer:
-                captured_last["tokens"] = detached_tokens
+                captured_last["tokens"] = (
+                    text_output.detach(),
+                    image_output.detach(),
+                )
             return output
 
         return policy_forward
@@ -506,8 +525,8 @@ class SearchController:
     """
     在完整教师pipeline内部逐step穷举窗口，但返回教师输出维持完整基线轨迹。
 
-    第一个timestep完整计算并按CFG分支建立全部Block缓存；后续候选的跳过层
-    只读取上一教师timestep同分支、同编号Block的缓存。
+    第一个timestep完整计算并按CFG分支建立全部Block层内残差缓存；后续候选
+    的跳过层把上一教师timestep同分支、同编号Block的残差加到当前输入。
     """
 
     def __init__(
@@ -717,9 +736,13 @@ class SearchController:
                 ),
                 "score": mean("score"),
                 "selected": False,
-                "mode": "previous_timestep_same_block_cache",
-                "search_cache_source": "previous_teacher_timestep_same_block",
-                "cache_source": "previous_teacher_timestep_same_block",
+                "mode": "previous_timestep_same_block_residual_cache",
+                "search_cache_source": (
+                    "previous_teacher_timestep_same_block_residual"
+                ),
+                "cache_source": (
+                    "previous_teacher_timestep_same_block_residual"
+                ),
             }
             aggregates.append(aggregate)
 
@@ -734,9 +757,13 @@ class SearchController:
         self.aggregate_rows.extend(aggregates)
         self.schedule[step_index] = {
             **best,
-            "mode": "previous_timestep_same_block_cache",
-            "search_cache_source": "previous_teacher_timestep_same_block",
-            "cache_source": "previous_scheduled_timestep_same_block",
+            "mode": "previous_timestep_same_block_residual_cache",
+            "search_cache_source": (
+                "previous_teacher_timestep_same_block_residual"
+            ),
+            "cache_source": (
+                "previous_scheduled_timestep_same_block_residual"
+            ),
         }
         print(
             f"{self._progress_prefix()} "
@@ -838,9 +865,13 @@ class SearchController:
                 "skipped_block_count": len(skipped),
                 "executed_blocks_1based": one_based_layer_string(sorted(executed)),
                 "skipped_blocks_1based": one_based_layer_string(skipped),
-                "mode": "previous_timestep_same_block_cache",
-                "search_cache_source": "previous_teacher_timestep_same_block",
-                "cache_source": "previous_teacher_timestep_same_block",
+                "mode": "previous_timestep_same_block_residual_cache",
+                "search_cache_source": (
+                    "previous_teacher_timestep_same_block_residual"
+                ),
+                "cache_source": (
+                    "previous_teacher_timestep_same_block_residual"
+                ),
                 **metrics,
             }
             self.branch_rows.append(row)
@@ -891,8 +922,8 @@ class ScheduledController:
     """
     按每个timestep选出的最优窗口执行最终组合路径。
 
-    与搜索不同，最终运行维护的是组合路径自身的逐层缓存：执行层写入新输出，
-    跳过层沿用上一timestep同编号Block输出。
+    与搜索不同，最终运行维护的是组合路径自身的逐层残差缓存：执行层用真实
+    前向更新层内残差；跳过层把上一timestep同编号Block残差加到当前输入。
     """
 
     def __init__(
@@ -1205,7 +1236,9 @@ def main() -> None:
             **vars(args),
             "strategy_version": CACHE_STRATEGY_VERSION,
             "first_timestep": "full_compute_all_blocks",
-            "skipped_block_policy": "previous_timestep_same_block_cache",
+            "skipped_block_policy": (
+                "current_input_plus_previous_timestep_same_block_residual"
+            ),
         },
         output_dir / "run_config.json",
     )
@@ -1229,7 +1262,7 @@ def main() -> None:
         f"每个候选连续执行{args.window_size}个中间Block；"
         f"从第二个timestep起加上首尾后每步共执行{normal_executed_count}层、"
         f"跳过{total_layers - normal_executed_count}层；"
-        "跳过层读取上一timestep同编号Block缓存；"
+        "跳过层使用当前输入加上一timestep同编号Block层内残差；"
         f"forwards_per_step={forwards_per_step}。",
         flush=True,
     )
@@ -1281,12 +1314,14 @@ def main() -> None:
     schedule_payload = {
         "method": (
             "第一个timestep完整执行全部Block；后续Block 1和最后一个Block"
-            "始终执行，并执行固定长度的连续中间窗口；其他Block读取上一"
-            "timestep同编号Block的text/image双流缓存。"
+            "始终执行，并执行固定长度的连续中间窗口；其他Block把上一"
+            "timestep同编号Block的text/image层内残差加到当前输入。"
         ),
         "strategy_version": CACHE_STRATEGY_VERSION,
         "first_timestep": "full_compute_all_blocks",
-        "skipped_block_policy": "previous_timestep_same_block_cache",
+        "skipped_block_policy": (
+            "current_input_plus_previous_timestep_same_block_residual"
+        ),
         "score_formula": (
             f"{args.noise_weight} * noise_relative_mse + "
             f"{args.image_token_weight} * image_token_relative_mse + "

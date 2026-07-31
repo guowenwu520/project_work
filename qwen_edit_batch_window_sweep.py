@@ -10,9 +10,10 @@
 每张图片的流程：
 1. 从 Markdown 提示词集合中随机选择一条正向英文人像编辑提示词。
 2. 运行一次完整模型，保存 baseline。
-3. 第一个 timestep 完整执行全部 Block，并保存每一层输出缓存。
+3. 第一个 timestep 完整执行全部 Block，并保存每一层的双流层内残差。
 4. 从第二个 timestep 开始测试窗口长度 5..55 的所有合法连续位置；未执行
-   Block 读取上一个 timestep 同编号 Block 的 text/image 输出。
+   Block 把上一个 timestep 同编号 Block 的 text/image 层内残差加到当前
+   输入，保持当前 hidden 连续向前传播。
 5. 保存每个候选的执行层、缓存层、token误差、噪声误差和综合误差。
 6. 对每个窗口长度分别选择逐 timestep 最优连续位置。
 7. 按每种窗口长度的最优序列各生成一张最终图片并保存。
@@ -145,7 +146,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="/data4/guowenwu/MMDITModelCompression/outputs/window_sweep_10k",
+        default=(
+            "/data4/guowenwu/MMDITModelCompression/outputs/"
+            "residual_cache_v2_window_sweep_10k"
+        ),
     )
     parser.add_argument(
         "--image-format",
@@ -233,10 +237,15 @@ def initialize_distributed(args: argparse.Namespace) -> Tuple[int, int, int]:
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     rank = int(os.environ.get("RANK", "0"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
+
+    device = torch.device(f"cuda:{local_rank}")
+    torch.cuda.set_device(device)
+    args.device = str(device)
+
     if world_size > 1:
-        torch.cuda.set_device(local_rank)
-        dist.init_process_group(backend="nccl")
-        args.device = f"cuda:{local_rank}"
+        # 本程序只需要进程同步，不进行GPU Tensor通信
+        dist.init_process_group(backend="gloo")
+
     return rank, local_rank, world_size
 
 
@@ -538,9 +547,13 @@ def derive_schedules(
             step_schedule[step_index] = {
                 **copy.deepcopy(best),
                 "selected_for_window_size": True,
-                "mode": "previous_timestep_same_block_cache",
-                "search_cache_source": "previous_teacher_timestep_same_block",
-                "cache_source": "previous_scheduled_timestep_same_block",
+                "mode": "previous_timestep_same_block_residual_cache",
+                "search_cache_source": (
+                    "previous_teacher_timestep_same_block_residual"
+                ),
+                "cache_source": (
+                    "previous_scheduled_timestep_same_block_residual"
+                ),
             }
         schedules_by_size[window_size] = step_schedule
 
@@ -565,9 +578,13 @@ def derive_schedules(
         global_schedule[step_index] = {
             **copy.deepcopy(best),
             "selected_global": True,
-            "mode": "previous_timestep_same_block_cache",
-            "search_cache_source": "previous_teacher_timestep_same_block",
-            "cache_source": "previous_scheduled_timestep_same_block",
+            "mode": "previous_timestep_same_block_residual_cache",
+            "search_cache_source": (
+                "previous_teacher_timestep_same_block_residual"
+            ),
+            "cache_source": (
+                "previous_scheduled_timestep_same_block_residual"
+            ),
         }
     return schedules_by_size, global_schedule
 
@@ -691,7 +708,8 @@ def write_best_schedule_matrix_gz(
     """
     每种窗口长度及全局混合路径各输出一组逐step执行矩阵。
 
-    Block列中：1=当前timestep实际执行，0=读取上一timestep同编号Block缓存。
+    Block列中：1=当前timestep实际执行；0=当前输入加上一timestep同编号
+    Block的层内残差。
     第一个timestep全部为1。
     """
     block_fields = [f"block_{layer + 1:03d}" for layer in range(total_layers)]
@@ -894,7 +912,9 @@ def process_sample(
             "num_inference_steps": args.num_inference_steps,
             "strategy_version": STRATEGY_VERSION,
             "first_timestep": "full_compute_all_blocks",
-            "skipped_block_policy": "previous_timestep_same_block_cache",
+            "skipped_block_policy": (
+                "current_input_plus_previous_timestep_same_block_residual"
+            ),
             "candidate_count_first_timestep": 0,
             "candidate_count_later_timestep": len(candidates),
         },
@@ -948,7 +968,9 @@ def process_sample(
             {
                 "strategy_version": STRATEGY_VERSION,
                 "first_timestep": "full_compute_all_blocks",
-                "skipped_block_policy": "previous_timestep_same_block_cache",
+                "skipped_block_policy": (
+                    "current_input_plus_previous_timestep_same_block_residual"
+                ),
                 "search_elapsed_seconds": search_elapsed,
                 "aggregate_rows": aggregate_rows,
             },
@@ -997,10 +1019,14 @@ def process_sample(
     schedules_payload = {
         "strategy_version": STRATEGY_VERSION,
         "first_timestep": "full_compute_all_blocks",
-        "skipped_block_policy": "previous_timestep_same_block_cache",
+        "skipped_block_policy": (
+            "current_input_plus_previous_timestep_same_block_residual"
+        ),
         "matrix_legend": {
             "1": "execute_current_timestep",
-            "0": "reuse_previous_timestep_same_block_cache",
+            "0": (
+                "current_input_plus_previous_timestep_same_block_residual"
+            ),
         },
         "window_sizes": {
             str(window_size): [
@@ -1275,7 +1301,9 @@ def main() -> None:
                 **vars(args),
                 "strategy_version": STRATEGY_VERSION,
                 "first_timestep": "full_compute_all_blocks",
-                "skipped_block_policy": "previous_timestep_same_block_cache",
+                "skipped_block_policy": (
+                    "current_input_plus_previous_timestep_same_block_residual"
+                ),
                 "world_size": world_size,
                 "parsed_prompt_count": len(prompts),
                 "negative_prompt": negative_prompt,
@@ -1309,7 +1337,7 @@ def main() -> None:
         rank,
         f"cuda:{local_rank}分配到{len(local_rows)}张；"
         f"窗口长度={args.window_size_min}..{args.window_size_max}；"
-        "step 1全层计算，step 2起跳过层读取上一step同层缓存。",
+        "step 1全层计算，step 2起跳过层使用当前输入加上一step同层残差。",
     )
     pipe = load_pipeline(args)
 

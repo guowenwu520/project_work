@@ -1,0 +1,8 @@
+logs/
+examples/
+*.log
+dataset/
+models/
+outputs/
+*.out
+__pycache__/
