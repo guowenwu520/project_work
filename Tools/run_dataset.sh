@@ -222,6 +222,45 @@ count_batch_frames() {
   find "$OUTPUT" -type f -path "*/${prefix}*/frames/frame_*.png" -printf '.' 2>/dev/null | wc -c
 }
 
+count_frames_in_batch_dir() {
+  local batch_dir="$1"
+  if [[ ! -d "$batch_dir/frames" ]]; then
+    printf '0\n'
+    return 0
+  fi
+  find "$batch_dir/frames" -maxdepth 1 -type f -name 'frame_*.png' -printf '.' 2>/dev/null | wc -c
+}
+
+find_complete_batch_dir() {
+  local index="$1"
+  local expected_frames="$2"
+  local prefix batch_dir frame_count last_expected_frame
+
+  prefix="$(batch_prefix "$index")"
+  printf -v last_expected_frame 'frame_%06d.png' "$((expected_frames - 1))"
+
+  while IFS= read -r batch_dir; do
+    [[ -n "$batch_dir" ]] || continue
+    frame_count="$(count_frames_in_batch_dir "$batch_dir")"
+
+    # ffmpeg reads from frame_000000.png in sequence. Checking both ends avoids
+    # treating an equally sized but incomplete sequence as a finished render.
+    if [[ "$frame_count" -ge "$expected_frames" \
+      && -f "$batch_dir/frames/frame_000000.png" \
+      && -f "$batch_dir/frames/$last_expected_frame" ]]; then
+      printf '%s\n' "$batch_dir"
+      return 0
+    fi
+  done < <(
+    find "$OUTPUT" -mindepth 1 -maxdepth 1 -type d -name "${prefix}*" \
+      -printf '%T@\t%p\n' 2>/dev/null \
+      | sort -nr \
+      | cut -f2-
+  )
+
+  return 1
+}
+
 video_path_for_index() {
   printf '%s/data/video_%06d.mp4' "$OUTPUT" "$1"
 }
@@ -497,6 +536,33 @@ run_one_item() (
   if [[ "$RESUME" == "1" && -s "$output_video" ]]; then
     echo "[item $i][$ordinal/$COUNT] Skipped; video already exists."
     exit 0
+  fi
+
+  if [[ "$RESUME" == "1" ]]; then
+    batch_dir="$(find_complete_batch_dir "$i" "$expected_frames" || true)"
+    if [[ -n "$batch_dir" ]]; then
+      final_frames="$(count_frames_in_batch_dir "$batch_dir")"
+      echo "[item $i][$ordinal/$COUNT] Resume: found $final_frames/$expected_frames completed PNG frames."
+      echo "[item $i] Skipping Unity and encoding the existing frame sequence directly."
+
+      encode_and_cleanup "$i" "$batch_dir"
+
+      if [[ "$CLEAN_ITEM_CONFIG" == "1" ]]; then
+        rm -rf "$item_config"
+      fi
+
+      trap - INT TERM
+      echo "[item $i][$ordinal/$COUNT] Complete; recovered from existing frames."
+      exit 0
+    fi
+
+    batch_dir="$(find_batch_dir "$i")"
+    if [[ -n "$batch_dir" && -d "$batch_dir/frames" ]]; then
+      final_frames="$(count_frames_in_batch_dir "$batch_dir")"
+      if [[ "$final_frames" -gt 0 ]]; then
+        echo "[item $i] Resume: existing frames are incomplete ($final_frames/$expected_frames); Unity will continue normally."
+      fi
+    fi
   fi
 
   item_width="$WIDTH"
