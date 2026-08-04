@@ -52,9 +52,7 @@ public static class DatasetAnnotationWriter
 
         DatasetVideoQaRecord record = new DatasetVideoQaRecord
         {
-            video_id = videoId,
             video = normalizedVideoPath,
-            video_path = normalizedVideoPath,
             scene_type = DatasetQATemplateLibrary.SceneType,
             metadata = metadata,
             questions = qa
@@ -132,9 +130,6 @@ public static class DatasetAnnotationWriter
         DatasetVideoMetadata metadata =
             new DatasetVideoMetadata
             {
-                change_type =
-                    MetadataChangeType(job.changeType),
-                change_exists = job.HasVisualChange,
                 view_a_object_count = job.InitialObjectCount,
                 view_b_object_count = job.FinalObjectCount,
                 object_replaced = Matches(
@@ -175,7 +170,10 @@ public static class DatasetAnnotationWriter
                             job.changeType,
                             DatasetChangeTypes.DistanceDecrease)
                             ? "decreased"
-                            : "none"
+                            : "none",
+                no_change = Matches(
+                    job.changeType,
+                    DatasetChangeTypes.NoChange)
             };
 
         AddState(
@@ -245,53 +243,6 @@ public static class DatasetAnnotationWriter
         {
             colors.Add("Null");
         }
-    }
-
-    private static string MetadataChangeType(string value)
-    {
-        if (Matches(
-            value,
-            DatasetChangeTypes.OneObjectReplacement))
-        {
-            return "replacement";
-        }
-        if (Matches(
-            value,
-            DatasetChangeTypes.ColorChange))
-        {
-            return "color_change";
-        }
-        if (Matches(
-            value,
-            DatasetChangeTypes.SwapPositions))
-        {
-            return "position_swap";
-        }
-        if (Matches(
-            value,
-            DatasetChangeTypes.ObjectAdding))
-        {
-            return "object_adding";
-        }
-        if (Matches(
-            value,
-            DatasetChangeTypes.ObjectDeleting))
-        {
-            return "object_deleting";
-        }
-        if (Matches(
-            value,
-            DatasetChangeTypes.DistanceIncrease))
-        {
-            return "distance_increase";
-        }
-        if (Matches(
-            value,
-            DatasetChangeTypes.DistanceDecrease))
-        {
-            return "distance_decrease";
-        }
-        return "no_change";
     }
 
     private static bool Matches(string first, string second)

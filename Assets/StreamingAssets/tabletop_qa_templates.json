@@ -1,8 +1,8 @@
 {
   "schema_version": "3.7",
-  "content_revision": "xlsx-auto-sync-sheet01-08-de71a68a5d2c168e",
+  "content_revision": "xlsx-auto-sync-sheet01-08-9ade7b4dc7585e27",
   "source_workbook": "QAs_v5_d.xlsx",
-  "source_workbook_sha256": "a987fa1fad75702ecd364c7dbf4643401d6546b15fc04a9227fb6a9e0d5e5a87",
+  "source_workbook_sha256": "81ce2e1791a54beb55c5a82a1f20e3560ff19698707f0a0b5d6996a0011571bc",
   "qa_source_policy": "Only sheets 01-08 are authoritative for QA wording.",
   "qa_source_sheets": [
     "01_Replacement",
@@ -49,7 +49,7 @@
     "object_adding": 39,
     "object_deleting": 39
   },
-  "source_qa_sha256": "de71a68a5d2c168e612fef486bfb29bfe924dce7a2250f6710c231a51e970808",
+  "source_qa_sha256": "9ade7b4dc7585e278309da13d2780609950a86c8a370ba16afb3008e375a2d40",
   "source_sheets_sha256": "668d66f220b5986e16fcfd0fd230934836d2105e0bcc3d4cc690d05c9dfd8363",
   "typical_variable_values": {
     "view_a_object_a": "the red cup",
@@ -228,8 +228,8 @@
         },
         {
           "template_id": "replacement_14",
-          "question": "Which object was present only at the end?",
-          "answer": "The {view_b_object_a} was present only at the end.",
+          "question": "Which object is present only at the end?",
+          "answer": "The {view_b_object_a} is present only at the end.",
           "required_variables": [
             "view_b_object_a"
           ],
@@ -240,7 +240,7 @@
         {
           "template_id": "replacement_15",
           "question": "Ignoring the change in viewing side, what is the main difference between the first view and second view of the tabletop?",
-          "answer": "The {view_a_object_a} in the initial state is replaced by the {view_b_object_a} in the second tabletop.",
+          "answer": "The {view_a_object_a} in the initial state is replaced by the {view_b_object_a} in the second tabletop state.",
           "required_variables": [
             "view_a_object_a",
             "view_b_object_a"
@@ -262,8 +262,8 @@
         },
         {
           "template_id": "replacement_17",
-          "question": "How many objects were on the table at the end?",
-          "answer": "There were {view_b_count} objects on the table.",
+          "question": "How many objects are on the table at the end?",
+          "answer": "There are {view_b_count} objects on the table.",
           "required_variables": [
             "view_b_count"
           ],
@@ -619,7 +619,7 @@
         },
         {
           "template_id": "replacement_48",
-          "question": "Was the {view_b_object_a} present only in the second view?",
+          "question": "Is the {view_b_object_a} present only in the second view?",
           "answer": "Yes.",
           "required_variables": [
             "view_b_object_a"
@@ -2095,10 +2095,10 @@
         {
           "template_id": "swap_positions_07",
           "question": "Which object has moved to {view_b_position_b}?",
-          "answer": "The {view_a_object_b} has moved there.",
+          "answer": "The {view_a_object_a} has moved there.",
           "required_variables": [
             "view_b_position_b",
-            "view_a_object_b"
+            "view_a_object_a"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2107,10 +2107,10 @@
         {
           "template_id": "swap_positions_08",
           "question": "Which object has moved to {view_b_position_a}?",
-          "answer": "The {view_a_object_a} has moved there.",
+          "answer": "The {view_a_object_b} has moved there.",
           "required_variables": [
             "view_b_position_a",
-            "view_a_object_a"
+            "view_a_object_b"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2143,12 +2143,12 @@
         {
           "template_id": "swap_positions_11",
           "question": "Describe the position exchange.",
-          "answer": "Both objects moved to the other side of the table. The {view_a_object_a} is eventually on {view_b_position_a}, and the {view_a_object_b} is eventually on {view_b_position_b}.",
+          "answer": "Both objects moved to the other side of the table. The {view_a_object_a} is eventually on {view_b_position_b}, and the {view_a_object_b} is eventually on {view_b_position_a}.",
           "required_variables": [
             "view_a_object_a",
-            "view_b_position_a",
+            "view_b_position_b",
             "view_a_object_b",
-            "view_b_position_b"
+            "view_b_position_a"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2229,10 +2229,10 @@
         {
           "template_id": "swap_positions_19",
           "question": "Which object is now on {view_b_position_b}?",
-          "answer": "The {view_a_object_b} is there.",
+          "answer": "The {view_a_object_a} is there.",
           "required_variables": [
             "view_b_position_b",
-            "view_a_object_b"
+            "view_a_object_a"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2241,10 +2241,10 @@
         {
           "template_id": "swap_positions_20",
           "question": "Which object is now on {view_b_position_a}?",
-          "answer": "The {view_a_object_a} is there.",
+          "answer": "The {view_a_object_b} is there.",
           "required_variables": [
             "view_b_position_a",
-            "view_a_object_a"
+            "view_a_object_b"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2286,11 +2286,11 @@
         {
           "template_id": "swap_positions_24",
           "question": "Which object moved from {view_a_position_a} to the other side of the table?",
-          "answer": "The {view_a_object_a} moved to the other side of the table and ended on {view_b_position_a}.",
+          "answer": "The {view_a_object_a} moved to the other side of the table and ended on {view_b_position_b}.",
           "required_variables": [
             "view_a_position_a",
             "view_a_object_a",
-            "view_b_position_a"
+            "view_b_position_b"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2299,11 +2299,11 @@
         {
           "template_id": "swap_positions_25",
           "question": "Which object moved from {view_a_position_b} to the other side of the table?",
-          "answer": "The {view_a_object_b} moved to the other side of the table and ended on {view_b_position_b}.",
+          "answer": "The {view_a_object_b} moved to the other side of the table and ended on {view_b_position_a}.",
           "required_variables": [
             "view_a_position_b",
             "view_a_object_b",
-            "view_b_position_b"
+            "view_b_position_a"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2312,10 +2312,10 @@
         {
           "template_id": "swap_positions_26",
           "question": "What happened to the {view_a_object_a}'s location?",
-          "answer": "It moved to the other side of the table and ended on {view_b_position_a}.",
+          "answer": "The {view_a_object_a} moved to the other side of the table and ended on {view_b_position_b}.",
           "required_variables": [
             "view_a_object_a",
-            "view_b_position_a"
+            "view_b_position_b"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2324,10 +2324,10 @@
         {
           "template_id": "swap_positions_27",
           "question": "What happened to the {view_a_object_b}'s location?",
-          "answer": "It moved to the other side of the table and ended on {view_b_position_b}.",
+          "answer": "The {view_a_object_b} moved to the other side of the table and ended on {view_b_position_a}.",
           "required_variables": [
             "view_a_object_b",
-            "view_b_position_b"
+            "view_b_position_a"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",
@@ -2453,12 +2453,12 @@
         {
           "template_id": "swap_positions_39",
           "question": "Summarize the arrangement in the second view.",
-          "answer": "The {view_a_object_a} is on {view_b_position_a}, and the {view_a_object_b} is on {view_b_position_b}.",
+          "answer": "The {view_a_object_a} is on {view_b_position_b}, and the {view_a_object_b} is on {view_b_position_a}.",
           "required_variables": [
             "view_a_object_a",
-            "view_b_position_a",
+            "view_b_position_b",
             "view_a_object_b",
-            "view_b_position_b"
+            "view_b_position_a"
           ],
           "answer_style": "descriptive",
           "source_sheet": "05_Position_Swap",

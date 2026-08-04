@@ -140,31 +140,23 @@ public static class DatasetQAGenerator
         DatasetObjectState leftAfter = job.leftAfter;
         DatasetObjectState rightAfter = job.rightAfter;
 
+        // The a/b suffix always names the physical tabletop slot, never the
+        // changed object or an object's identity across views:
+        //   A = first-view left  / second-view right
+        //   B = first-view right / second-view left
+        // leftBefore/leftAfter are physical slot A; rightBefore/rightAfter
+        // are physical slot B. Canonical-slot validation above guarantees
+        // that fixed-wording changes happen in the slot required by the XLSX.
+
         if (string.Equals(
             job.changeType,
             DatasetChangeTypes.OneObjectReplacement,
             StringComparison.OrdinalIgnoreCase))
         {
-            bool changedLeft = IsLeft(job.changedSlot);
-            DatasetObjectState before =
-                changedLeft ? leftBefore : rightBefore;
-            DatasetObjectState after =
-                changedLeft ? leftAfter : rightAfter;
-            DatasetObjectState unchangedBefore =
-                changedLeft ? rightBefore : leftBefore;
-            DatasetObjectState unchangedAfter =
-                changedLeft ? rightAfter : leftAfter;
-
-            Put(values, "view_a_object_a", Description(before));
-            Put(values, "view_b_object_a", Description(after));
-            Put(
-                values,
-                "view_a_object_b",
-                Description(unchangedBefore));
-            Put(
-                values,
-                "view_b_object_b",
-                Description(unchangedAfter));
+            Put(values, "view_a_object_a", Description(leftBefore));
+            Put(values, "view_b_object_a", Description(leftAfter));
+            Put(values, "view_a_object_b", Description(rightBefore));
+            Put(values, "view_b_object_b", Description(rightAfter));
             Put(values, "view_a_position_a", ViewAPositionA());
             Put(values, "view_b_position_a", ViewBPositionA());
         }
@@ -173,28 +165,12 @@ public static class DatasetQAGenerator
             DatasetChangeTypes.ColorChange,
             StringComparison.OrdinalIgnoreCase))
         {
-            bool changedLeft = IsLeft(job.changedSlot);
-            DatasetObjectState before =
-                changedLeft ? leftBefore : rightBefore;
-            DatasetObjectState after =
-                changedLeft ? leftAfter : rightAfter;
-            DatasetObjectState unchangedBefore =
-                changedLeft ? rightBefore : leftBefore;
-            DatasetObjectState unchangedAfter =
-                changedLeft ? rightAfter : leftAfter;
-
-            Put(values, "view_a_object_a", Label(before));
-            Put(values, "view_b_object_a", Label(after));
-            Put(
-                values,
-                "view_a_object_b",
-                Description(unchangedBefore));
-            Put(
-                values,
-                "view_b_object_b",
-                Description(unchangedAfter));
-            Put(values, "view_a_color_a", ColorValue(before));
-            Put(values, "view_b_color_a", ColorValue(after));
+            Put(values, "view_a_object_a", Label(leftBefore));
+            Put(values, "view_b_object_a", Label(leftAfter));
+            Put(values, "view_a_object_b", Description(rightBefore));
+            Put(values, "view_b_object_b", Description(rightAfter));
+            Put(values, "view_a_color_a", ColorValue(leftBefore));
+            Put(values, "view_b_color_a", ColorValue(leftAfter));
             Put(values, "view_a_position_a", ViewAPositionA());
             Put(values, "view_b_position_a", ViewBPositionA());
         }
@@ -208,20 +184,10 @@ public static class DatasetQAGenerator
                 DatasetChangeTypes.DistanceDecrease,
                 StringComparison.OrdinalIgnoreCase))
         {
-            bool movedLeft = IsLeft(job.changedSlot);
-            DatasetObjectState movingBefore =
-                movedLeft ? leftBefore : rightBefore;
-            DatasetObjectState movingAfter =
-                movedLeft ? leftAfter : rightAfter;
-            DatasetObjectState stationaryBefore =
-                movedLeft ? rightBefore : leftBefore;
-            DatasetObjectState stationaryAfter =
-                movedLeft ? rightAfter : leftAfter;
-
-            Put(values, "view_a_object_a", Description(movingBefore));
-            Put(values, "view_a_object_b", Description(stationaryBefore));
-            Put(values, "view_b_object_a", Description(movingAfter));
-            Put(values, "view_b_object_b", Description(stationaryAfter));
+            Put(values, "view_a_object_a", Description(leftBefore));
+            Put(values, "view_a_object_b", Description(rightBefore));
+            Put(values, "view_b_object_a", Description(leftAfter));
+            Put(values, "view_b_object_b", Description(rightAfter));
             Put(values, "view_a_position_a", ViewAPositionA());
             Put(values, "view_a_position_b", ViewAPositionB());
             Put(values, "view_b_position_a", ViewBPositionA());
@@ -234,8 +200,8 @@ public static class DatasetQAGenerator
         {
             Put(values, "view_a_object_a", Description(leftBefore));
             Put(values, "view_a_object_b", Description(rightBefore));
-            Put(values, "view_b_object_a", Description(rightAfter));
-            Put(values, "view_b_object_b", Description(leftAfter));
+            Put(values, "view_b_object_a", Description(leftAfter));
+            Put(values, "view_b_object_b", Description(rightAfter));
             Put(values, "view_a_position_a", ViewAPositionA());
             Put(values, "view_a_position_b", ViewAPositionB());
             Put(values, "view_b_position_a", ViewBPositionA());
@@ -246,15 +212,9 @@ public static class DatasetQAGenerator
             DatasetChangeTypes.ObjectAdding,
             StringComparison.OrdinalIgnoreCase))
         {
-            bool addedLeft = IsLeft(job.changedSlot);
-            DatasetObjectState original =
-                addedLeft ? rightAfter : leftAfter;
-            DatasetObjectState added =
-                addedLeft ? leftAfter : rightAfter;
-
-            Put(values, "view_a_object_a", Description(original));
-            Put(values, "view_b_object_a", Description(original));
-            Put(values, "view_b_object_b", Description(added));
+            Put(values, "view_a_object_a", Description(leftBefore));
+            Put(values, "view_b_object_a", Description(leftAfter));
+            Put(values, "view_b_object_b", Description(rightAfter));
             Put(values, "view_a_position_a", ViewAPositionA());
             Put(values, "view_b_position_a", ViewBPositionA());
             Put(values, "view_b_position_b", ViewBPositionB());
@@ -264,17 +224,11 @@ public static class DatasetQAGenerator
             DatasetChangeTypes.ObjectDeleting,
             StringComparison.OrdinalIgnoreCase))
         {
-            bool deletedLeft = IsLeft(job.changedSlot);
-            DatasetObjectState removed =
-                deletedLeft ? leftBefore : rightBefore;
-            DatasetObjectState remaining =
-                deletedLeft ? rightAfter : leftAfter;
-
-            Put(values, "view_a_object_a", Description(remaining));
-            Put(values, "view_a_object_b", Description(removed));
+            Put(values, "view_a_object_a", Description(leftBefore));
+            Put(values, "view_a_object_b", Description(rightBefore));
             Put(values, "view_a_position_a", ViewAPositionA());
             Put(values, "view_a_position_b", ViewAPositionB());
-            Put(values, "view_b_object_a", Description(remaining));
+            Put(values, "view_b_object_a", Description(leftAfter));
             Put(values, "view_b_position_a", ViewBPositionA());
         }
         else
@@ -399,14 +353,6 @@ public static class DatasetQAGenerator
         {
             values[key] = value.Trim();
         }
-    }
-
-    private static bool IsLeft(string slot)
-    {
-        return string.Equals(
-            slot,
-            "left",
-            StringComparison.OrdinalIgnoreCase);
     }
 
     private static string Description(DatasetObjectState state)

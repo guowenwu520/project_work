@@ -1026,20 +1026,6 @@ def state_color_list(
     return [color or "Null"]
 
 
-def metadata_change_type(value: Any) -> str:
-    change_type = normalize_change_type(value)
-    return {
-        "one_object_replacement": "replacement",
-        "same_object_color_change": "color_change",
-        "distance_increase": "distance_increase",
-        "distance_decrease": "distance_decrease",
-        "swap_positions": "position_swap",
-        "no_change": "no_change",
-        "object_adding": "object_adding",
-        "object_deleting": "object_deleting",
-    }.get(change_type, change_type or "no_change")
-
-
 def build_metadata(
     annotation: dict[str, Any],
 ) -> dict[str, Any]:
@@ -1082,8 +1068,6 @@ def build_metadata(
         "distance_decrease",
     }
     return {
-        "change_type": metadata_change_type(change_type),
-        "change_exists": change_type != "no_change",
         "view_a_object_count": int(initial_count),
         "view_b_object_count": int(final_count),
         "view_a_position_a": state_object_list(left_before),
@@ -1113,6 +1097,7 @@ def build_metadata(
             else "decreased"
             if change_type == "distance_decrease"
             else "none",
+        "no_change": change_type == "no_change",
     }
 
 
@@ -1124,10 +1109,6 @@ def put(
     text = str(value or "").strip()
     if key and text:
         context[key] = text
-
-
-def is_left(slot: Any) -> bool:
-    return str(slot or "").strip().lower() == "left"
 
 
 def build_context(
@@ -1161,6 +1142,14 @@ def build_context(
     left_after = annotation.get("leftAfter") or {}
     right_after = annotation.get("rightAfter") or {}
 
+    # The a/b suffix always names the physical tabletop slot, never the
+    # changed object or an object's identity across views:
+    #   A = first-view left  / second-view right
+    #   B = first-view right / second-view left
+    # leftBefore/leftAfter are physical slot A; rightBefore/rightAfter are
+    # physical slot B. Canonical-slot validation guarantees that each fixed
+    # XLSX description matches the generated scene.
+
     initial_count = annotation.get("initialObjectCount")
     if initial_count is None:
         initial_count = sum(
@@ -1185,40 +1174,20 @@ def build_context(
     )
 
     if change_type == "one_object_replacement":
-        changed_left = is_left(changed_slot)
-        before = left_before if changed_left else right_before
-        after = left_after if changed_left else right_after
-        unchanged_before = (
-            right_before if changed_left else left_before
-        )
-        unchanged_after = (
-            right_after if changed_left else left_after
-        )
-
-        put("view_a_object_a", state_description(before))
-        put("view_b_object_a", state_description(after))
-        put("view_a_object_b", state_description(unchanged_before))
-        put("view_b_object_b", state_description(unchanged_after))
+        put("view_a_object_a", state_description(left_before))
+        put("view_b_object_a", state_description(left_after))
+        put("view_a_object_b", state_description(right_before))
+        put("view_b_object_b", state_description(right_after))
         put("view_a_position_a", view_a_position_a())
         put("view_b_position_a", view_b_position_a())
 
     elif change_type == "same_object_color_change":
-        changed_left = is_left(changed_slot)
-        before = left_before if changed_left else right_before
-        after = left_after if changed_left else right_after
-        unchanged_before = (
-            right_before if changed_left else left_before
-        )
-        unchanged_after = (
-            right_after if changed_left else left_after
-        )
-
-        put("view_a_object_a", state_label(before))
-        put("view_b_object_a", state_label(after))
-        put("view_a_object_b", state_description(unchanged_before))
-        put("view_b_object_b", state_description(unchanged_after))
-        put("view_a_color_a", color_value(before))
-        put("view_b_color_a", color_value(after))
+        put("view_a_object_a", state_label(left_before))
+        put("view_b_object_a", state_label(left_after))
+        put("view_a_object_b", state_description(right_before))
+        put("view_b_object_b", state_description(right_after))
+        put("view_a_color_a", color_value(left_before))
+        put("view_b_color_a", color_value(left_after))
         put("view_a_position_a", view_a_position_a())
         put("view_b_position_a", view_b_position_a())
 
@@ -1226,20 +1195,10 @@ def build_context(
         "distance_increase",
         "distance_decrease",
     }:
-        moved_left = is_left(changed_slot)
-        moving_before = left_before if moved_left else right_before
-        moving_after = left_after if moved_left else right_after
-        stationary_before = (
-            right_before if moved_left else left_before
-        )
-        stationary_after = (
-            right_after if moved_left else left_after
-        )
-
-        put("view_a_object_a", state_description(moving_before))
-        put("view_a_object_b", state_description(stationary_before))
-        put("view_b_object_a", state_description(moving_after))
-        put("view_b_object_b", state_description(stationary_after))
+        put("view_a_object_a", state_description(left_before))
+        put("view_a_object_b", state_description(right_before))
+        put("view_b_object_a", state_description(left_after))
+        put("view_b_object_b", state_description(right_after))
         put("view_a_position_a", view_a_position_a())
         put("view_a_position_b", view_a_position_b())
         put("view_b_position_a", view_b_position_a())
@@ -1248,35 +1207,27 @@ def build_context(
     elif change_type == "swap_positions":
         put("view_a_object_a", state_description(left_before))
         put("view_a_object_b", state_description(right_before))
-        put("view_b_object_a", state_description(right_after))
-        put("view_b_object_b", state_description(left_after))
+        put("view_b_object_a", state_description(left_after))
+        put("view_b_object_b", state_description(right_after))
         put("view_a_position_a", view_a_position_a())
         put("view_a_position_b", view_a_position_b())
         put("view_b_position_a", view_b_position_a())
         put("view_b_position_b", view_b_position_b())
 
     elif change_type == "object_adding":
-        added_left = is_left(changed_slot)
-        original = right_after if added_left else left_after
-        added = left_after if added_left else right_after
-
-        put("view_a_object_a", state_description(original))
-        put("view_b_object_a", state_description(original))
-        put("view_b_object_b", state_description(added))
+        put("view_a_object_a", state_description(left_before))
+        put("view_b_object_a", state_description(left_after))
+        put("view_b_object_b", state_description(right_after))
         put("view_a_position_a", view_a_position_a())
         put("view_b_position_a", view_b_position_a())
         put("view_b_position_b", view_b_position_b())
 
     elif change_type == "object_deleting":
-        deleted_left = is_left(changed_slot)
-        removed = left_before if deleted_left else right_before
-        remaining = right_after if deleted_left else left_after
-
-        put("view_a_object_a", state_description(remaining))
-        put("view_a_object_b", state_description(removed))
+        put("view_a_object_a", state_description(left_before))
+        put("view_a_object_b", state_description(right_before))
         put("view_a_position_a", view_a_position_a())
         put("view_a_position_b", view_a_position_b())
-        put("view_b_object_a", state_description(remaining))
+        put("view_b_object_a", state_description(left_after))
         put("view_b_position_a", view_b_position_a())
 
     elif change_type == "no_change":
@@ -1950,12 +1901,8 @@ def main() -> int:
             questions_per_scene,
         )
 
-        batch_id = int(annotation.get("batchId", 0))
-        video_id = f"scene_{batch_id:06d}"
         record = {
-            "video_id": video_id,
             "video": video_path,
-            "video_path": video_path,
             "scene_type": str(
                 library.get("scene_type") or "tabletop"
             ),
@@ -2080,7 +2027,8 @@ def main() -> int:
             batch_dir / "qa.txt",
             build_qa_text(
                 annotation,
-                record["video_id"],
+                "scene_"
+                + str(int(annotation.get("batchId", 0))).zfill(6),
                 qa,
             ),
         )

@@ -111,6 +111,17 @@ Assets/StreamingAssets/tabletop_qa_templates.json
 输出时只把表格中的 `yes_no` 类型规范为
 `question_type: "yes_or_no"`。
 
+物体变量按物理槽位固定解释，不能按“发生变化的物体”或跨视角的
+物体身份重新编号：
+
+- `view_a_object_a`：第一视角左侧（物理 A 槽）的物体；
+- `view_a_object_b`：第一视角右侧（物理 B 槽）的物体；
+- `view_b_object_a`：第二视角中的物理 A 槽物体，画面上显示在右侧；
+- `view_b_object_b`：第二视角中的物理 B 槽物体，画面上显示在左侧。
+
+因此位置交换后，第一视角的 A 物体位于 `view_b_position_b`，第一
+视角的 B 物体位于 `view_b_position_a`。
+
 如果不增加新的 `{变量名}`，以后只需要修改 Excel 中的英文问题、
 英文答案或回答类型，再运行构建、测试、正式生成或问答重生成脚本，
 修改就会自动生效。如果加入当前代码不支持的新变量，同步会立即报错，
@@ -132,7 +143,7 @@ Assets/StreamingAssets/tabletop_qa_templates.json
 JSON schema：
 
 ```text
-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13
+eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15
 ```
 
 ### 3.1 均匀轮回抽取
@@ -199,13 +210,9 @@ Output/videodata.json
 ```json
 [
   {
-    "video_id": "scene_000123",
     "video": "data/video_000123.mp4",
-    "video_path": "data/video_000123.mp4",
     "scene_type": "tabletop",
     "metadata": {
-      "change_type": "replacement",
-      "change_exists": true,
       "view_a_object_count": 2,
       "view_b_object_count": 2,
       "view_a_position_a": ["apple"],
@@ -223,7 +230,8 @@ Output/videodata.json
       "color_changed": false,
       "position_changed": false,
       "distance_changed": false,
-      "distance_change": "none"
+      "distance_change": "none",
+      "no_change": false
     },
     "questions": [
       {
@@ -238,18 +246,18 @@ Output/videodata.json
 
 每条记录必须满足：
 
-- `video_id` 非空且唯一；
-- `video` 与 `video_path` 保存同一个相对 MP4 路径；
-- `video_path` 指向对应 MP4；
+- `video` 非空、唯一，并指向对应的相对 MP4 路径；
+- 不再输出冗余的 `video_id` 或 `video_path`；
 - `scene_type` 为 `tabletop`；
 - `metadata` 完整列出两个视角中 position A/B 的物体、颜色和数量；
 - 空位置使用空数组 `[]`；
 - 有物体但该物体没有颜色时，颜色数组使用字符串 `["Null"]`；
 - `position_a` 和 `position_b` 是固定桌面位置，不会因为第二视角
   位于桌子对面而互换字段名；
-- `metadata.change_type` 使用 `replacement`、`color_change`、
-  `distance_increase`、`distance_decrease`、`position_swap`、
-  `no_change`、`object_adding` 或 `object_deleting`；
+- `metadata` 不再输出 `change_type` 或 `change_exists`；
+- `object_replaced`、`object_added`、`object_removed`、
+  `color_changed`、`position_changed` 和 `distance_changed` 描述变化；
+- 只有无变化场景的 `no_change` 为 `true`；
 - `questions` 恰好包含 8 组问答；
 - 每组问答包含 `question_type`，取值只能为 `descriptive`
   或 `yes_or_no`；
@@ -448,7 +456,7 @@ chmod +x Build/Linux/ChangeBlindnessRoom.x86_64
 4. 检查模型清单；
 5. 将最新问答 JSON 同步到 Player 的 `StreamingAssets`。
 
-首次升级到 v13 时需要重新构建 Linux Player。之后如果只修改现有
+首次升级到 v15 时需要重新构建 Linux Player。之后如果只修改现有
 Excel 问答且不新增变量，可以直接运行 `run_dataset.sh`，它会自动同步
 Excel 和 Player 的问答 JSON，不需要重新编译 C#。
 
@@ -479,7 +487,8 @@ QA_ONLY=1 ./Tools/test_all_cases.sh
 条模板分别需要 8、8、4、4、8、8、5、5 个场景，共 50 个。
 以后调整模板数量时，测试场景数也会自动更新。测试会检查运行时 JSON
 确实由当前 Excel 生成、只使用 `01`–`08`、Variables 全量替换、
-固定位置英文、`Null` 颜色、单场问题唯一性、A/B 槽位对应、
+固定位置英文、`Null` 颜色、单场问题唯一性、A/B 物理槽位对应及
+位置交换后的物体终点、
 物体数量变化、完整 metadata、question_type，以及任一视角内
 物体类别不重复。完整渲染模式会通过 `FORCE_CHANGED_SLOT`
 明确传入每类变化唯一允许的规范槽位。
@@ -796,7 +805,7 @@ Build/Linux/dataset_schema_version.txt
 内容为：
 
 ```text
-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13
+eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15
 ```
 
 ### 14.3 提示找不到模型清单
@@ -852,6 +861,41 @@ DELETE_FRAMES=0 \
 
 请先加 `--dry-run` 检查。通过规范槽位校验的视频不需要重新运行
 Unity；未通过的视频必须重新渲染。
+
+### 14.9 拆分或合并 v15 视频数据集
+
+脚本位于项目根目录，不属于 `Tools` 中的四个构建、生成、测试、
+问答再生成脚本：
+
+```text
+video_dataset_split_merge.py
+```
+
+拆分：
+
+```bash
+python3 video_dataset_split_merge.py split \
+  Output/videodata.json \
+  Output/test100 \
+  Output/remain \
+  --count 100 \
+  --seed 42 \
+  --require-all-videos
+```
+
+合并：
+
+```bash
+python3 video_dataset_split_merge.py merge \
+  Output/test100/videodata.json \
+  Output/remain/videodata.json \
+  --output-dir Output/merged \
+  --require-all-videos
+```
+
+该版本会完整保留 `metadata` 和每道题的 `question_type`，并在视频
+文件改名时只更新 `video`。只有视频字节、metadata 和问答都完全
+相同的记录才会在合并时视为重复。
 
 ---
 

@@ -11,7 +11,7 @@ FPS="${FPS:-10}"
 WORKERS="${WORKERS:-2}"
 UNITY_JOB_WORKERS="${UNITY_JOB_WORKERS:-2}"
 START_INDEX="${START_INDEX:-$((100000 + $(date +%s) % 700000))}"
-EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13}"
+EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15}"
 QA_ONLY="${QA_ONLY:-0}"
 
 [[ -f "$SOURCE_WORKBOOK" ]] || {
@@ -426,6 +426,71 @@ def state_colors(state: object) -> list[str]:
     return [color or "Null"]
 
 
+def qa_description(state: object) -> str:
+    if not state_present(state):
+        return "no object"
+    assert isinstance(state, dict)
+    label = str(state.get("label") or "item").strip()
+    color = str(state.get("color") or "").strip()
+    if bool(state.get("supportsColor", False)) and color:
+        return f"{color} {label}".strip()
+    return label
+
+
+def qa_label(state: object) -> str:
+    if not isinstance(state, dict):
+        return "item"
+    return str(state.get("label") or "item").strip()
+
+
+def expected_qa_context(annotation: dict) -> dict[str, str]:
+    change_type = annotation["changeType"]
+    left_before = annotation.get("leftBefore")
+    right_before = annotation.get("rightBefore")
+    left_after = annotation.get("leftAfter")
+    right_after = annotation.get("rightAfter")
+
+    # Object a/b always names physical slot A/B. It never means
+    # "changed object" and never follows object identity through a swap.
+    context = {
+        "view_a_count": str(annotation["initialObjectCount"]),
+        "view_b_count": str(annotation["finalObjectCount"]),
+        "view_a_object_a": qa_description(left_before),
+        "view_a_object_b": qa_description(right_before),
+        "view_b_object_a": qa_description(left_after),
+        "view_b_object_b": qa_description(right_after),
+        **fixed_values,
+    }
+    if change_type == "same_object_color_change":
+        context["view_a_object_a"] = qa_label(left_before)
+        context["view_b_object_a"] = qa_label(left_after)
+    context["view_a_color_a"] = (
+        str((left_before or {}).get("color") or "").strip()
+        or "Null"
+    )
+    context["view_b_color_a"] = (
+        str((left_after or {}).get("color") or "").strip()
+        or "Null"
+    )
+    context["view_b_object_list"] = (
+        "The "
+        + qa_description(left_after)
+        + " and the "
+        + qa_description(right_after)
+    )
+    return context
+
+
+def render_expected(template: str, context: dict[str, str]) -> str:
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(1)
+        if name not in context:
+            fail(f"test context lacks variable {name}")
+        return context[name]
+
+    return placeholder_re.sub(replace, template).strip()
+
+
 def expected_metadata(annotation: dict) -> dict:
     change_type = annotation["changeType"]
     changed_slot = annotation["changedSlot"]
@@ -438,23 +503,11 @@ def expected_metadata(annotation: dict) -> dict:
         "right": ["position_b"],
         "both": ["position_a", "position_b"],
     }.get(changed_slot, [])
-    names = {
-        "one_object_replacement": "replacement",
-        "same_object_color_change": "color_change",
-        "distance_increase": "distance_increase",
-        "distance_decrease": "distance_decrease",
-        "swap_positions": "position_swap",
-        "no_change": "no_change",
-        "object_adding": "object_adding",
-        "object_deleting": "object_deleting",
-    }
     distance_changed = change_type in {
         "distance_increase",
         "distance_decrease",
     }
     return {
-        "change_type": names[change_type],
-        "change_exists": change_type != "no_change",
         "view_a_object_count": annotation["initialObjectCount"],
         "view_b_object_count": annotation["finalObjectCount"],
         "view_a_position_a": state_objects(left_before),
@@ -484,6 +537,7 @@ def expected_metadata(annotation: dict) -> dict:
             else "decreased"
             if change_type == "distance_decrease"
             else "none",
+        "no_change": change_type == "no_change",
     }
 
 
@@ -574,6 +628,52 @@ for change_type in types:
         )
         if placeholder_re.search(rendered_question + rendered_answer):
             fail(f"{item['template_id']}: typical substitution failed")
+
+# These position-swap rows encode object identity across the physical A/B
+# exchange. The wording remains sourced from the XLSX; this check prevents a
+# future placeholder edit from silently reversing the video/answer mapping.
+swap_required_variables = {
+    "swap_positions_04": ["view_a_object_a", "view_b_position_b"],
+    "swap_positions_06": ["view_a_object_b", "view_b_position_a"],
+    "swap_positions_07": ["view_b_position_b", "view_a_object_a"],
+    "swap_positions_08": ["view_b_position_a", "view_a_object_b"],
+    "swap_positions_11": [
+        "view_a_object_a",
+        "view_b_position_b",
+        "view_a_object_b",
+        "view_b_position_a",
+    ],
+    "swap_positions_19": ["view_b_position_b", "view_a_object_a"],
+    "swap_positions_20": ["view_b_position_a", "view_a_object_b"],
+    "swap_positions_24": [
+        "view_a_position_a",
+        "view_a_object_a",
+        "view_b_position_b",
+    ],
+    "swap_positions_25": [
+        "view_a_position_b",
+        "view_a_object_b",
+        "view_b_position_a",
+    ],
+    "swap_positions_26": ["view_a_object_a", "view_b_position_b"],
+    "swap_positions_27": ["view_a_object_b", "view_b_position_a"],
+    "swap_positions_39": [
+        "view_a_object_a",
+        "view_b_position_b",
+        "view_a_object_b",
+        "view_b_position_a",
+    ],
+}
+for template_id, required_variables in swap_required_variables.items():
+    item = template_lookup.get(template_id)
+    if item is None:
+        fail(f"missing required physical-slot template {template_id}")
+    if item.get("required_variables") != required_variables:
+        fail(
+            f"{template_id}: A/B swap mapping is reversed; got "
+            f"{item.get('required_variables')}, expected "
+            f"{required_variables}"
+        )
 
 qa_payload = json.dumps(
     core,
@@ -787,6 +887,26 @@ for path in annotations:
                 f"{path.parent.name}: {template_id} question_type "
                 "does not match the source sheet"
             )
+        expected_context = expected_qa_context(annotation)
+        source_template = template_lookup[template_id]
+        expected_question = render_expected(
+            source_template["question"],
+            expected_context,
+        )
+        expected_answer = render_expected(
+            source_template["answer"],
+            expected_context,
+        )
+        if pair.get("question") != expected_question:
+            fail(
+                f"{path.parent.name}: {template_id} question does "
+                "not use the physical A/B slot mapping"
+            )
+        if pair.get("answer") != expected_answer:
+            fail(
+                f"{path.parent.name}: {template_id} answer does not "
+                "use the physical A/B slot mapping"
+            )
         appearances[change_type][template_id] += 1
 
     metadata = annotation.get("metadata")
@@ -866,9 +986,19 @@ if len(records) != expected_total_scenes:
     )
 
 for record in records:
-    video_path = record.get("video_path")
-    if record.get("video") != video_path:
-        fail("video and video_path must contain the same relative path")
+    if set(record) != {
+        "video",
+        "scene_type",
+        "metadata",
+        "questions",
+    }:
+        fail(
+            "final record must contain only video, scene_type, "
+            "metadata, and questions"
+        )
+    video_path = record.get("video")
+    if not isinstance(video_path, str) or not video_path:
+        fail("video must contain the relative MP4 path")
     if record.get("scene_type") != "tabletop":
         fail("scene_type must be tabletop")
     annotation = annotations_by_video.get(video_path)
@@ -876,6 +1006,12 @@ for record in records:
         fail(f"no annotation matches video {video_path!r}")
     if record.get("metadata") != annotation.get("metadata"):
         fail(f"{video_path}: final-record metadata mismatch")
+    if "change_type" in record["metadata"]:
+        fail(f"{video_path}: metadata still contains change_type")
+    if "change_exists" in record["metadata"]:
+        fail(f"{video_path}: metadata still contains change_exists")
+    if not isinstance(record["metadata"].get("no_change"), bool):
+        fail(f"{video_path}: metadata.no_change is not boolean")
     if record.get("questions") != annotation.get("qa"):
         fail(f"{video_path}: final-record questions mismatch")
 

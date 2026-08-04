@@ -12,7 +12,7 @@ BUILD_DIR="$PROJECT_DIR/Build/Linux"
 LIGHT_BUILD_DIR="$LIGHT_PROJECT/Build/Linux"
 LOG_FILE="$PROJECT_DIR/Build/build_linux.log"
 
-SCHEMA_VERSION="${SCHEMA_VERSION:-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13}"
+SCHEMA_VERSION="${SCHEMA_VERSION:-eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15}"
 QA_WORKBOOK="$PROJECT_DIR/QAs_v5_d.xlsx"
 QA_REGENERATOR="$PROJECT_DIR/Tools/regenerate_existing_qa.py"
 QA_SOURCE="$PROJECT_DIR/Assets/StreamingAssets/tabletop_qa_templates.json"

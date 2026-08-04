@@ -42,7 +42,7 @@ UNITY_JOB_WORKERS="${UNITY_JOB_WORKERS:-2}"
 CLEAN_ITEM_CONFIG="${CLEAN_ITEM_CONFIG:-1}"
 SHOW_OVERALL_PROGRESS="${SHOW_OVERALL_PROGRESS:-1}"
 
-EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-eight-change-tabletop-xlsx-autosync-canonical-slots-metadata-v13}"
+EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15}"
 BUILD_SCHEMA_FILE="$PROJECT_DIR/Build/Linux/dataset_schema_version.txt"
 QA_WORKBOOK="$PROJECT_DIR/QAs_v5_d.xlsx"
 QA_LIBRARY="$PROJECT_DIR/Assets/StreamingAssets/tabletop_qa_templates.json"
@@ -333,20 +333,14 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
         print(f"Skipping non-grouped annotation: {path}", file=sys.stderr)
         continue
 
-    video_id = payload.get("video_id")
     video = payload.get("video")
-    video_path = payload.get("video_path")
     scene_type = payload.get("scene_type")
     metadata = payload.get("metadata")
     questions = payload.get("questions")
 
     if (
-        not isinstance(video_id, str)
-        or not video_id.strip()
-        or not isinstance(video, str)
+        not isinstance(video, str)
         or not video.strip()
-        or not isinstance(video_path, str)
-        or not video_path.strip()
         or scene_type != "tabletop"
         or not isinstance(metadata, dict)
         or not isinstance(questions, list)
@@ -393,19 +387,18 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
         print(f"Skipping invalid or duplicate QA set: {path}", file=sys.stderr)
         continue
 
-    normalized_video_path = video_path.replace("\\", "/").lstrip("/")
     normalized_video = video.replace("\\", "/").lstrip("/")
-    if normalized_video != normalized_video_path:
-        invalid += 1
-        print(
-            f"Skipping record with inconsistent video paths: {path}",
-            file=sys.stderr,
-        )
-        continue
+
+    # Accept an old qa_entries.json during resume, but always emit the compact
+    # v15 metadata shape in the final videodata.json.
+    legacy_change_type = metadata.get("change_type")
+    metadata = dict(metadata)
+    metadata.pop("change_type", None)
+    metadata.pop("change_exists", None)
+    if "no_change" not in metadata:
+        metadata["no_change"] = legacy_change_type == "no_change"
 
     required_metadata = {
-        "change_type": str,
-        "change_exists": bool,
         "view_a_object_count": int,
         "view_b_object_count": int,
         "view_a_position_a": list,
@@ -424,6 +417,7 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
         "position_changed": bool,
         "distance_changed": bool,
         "distance_change": str,
+        "no_change": bool,
     }
     metadata_valid = all(
         key in metadata
@@ -448,15 +442,13 @@ for path in sorted(root.glob("Batch_*/qa_entries.json")):
         print(f"Skipping invalid metadata: {path}", file=sys.stderr)
         continue
 
-    video_file = root / normalized_video_path
+    video_file = root / normalized_video
     if not video_file.is_file() or video_file.stat().st_size == 0:
         missing_video += 1
         continue
 
-    records[normalized_video_path] = {
-        "video_id": video_id.strip(),
-        "video": normalized_video_path,
-        "video_path": normalized_video_path,
+    records[normalized_video] = {
+        "video": normalized_video,
         "scene_type": "tabletop",
         "metadata": metadata,
         "questions": normalized_questions,

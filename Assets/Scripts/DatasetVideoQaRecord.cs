@@ -4,8 +4,6 @@ using System.Collections.Generic;
 [Serializable]
 public sealed class DatasetVideoMetadata
 {
-    public string change_type;
-    public bool change_exists;
     public int view_a_object_count;
     public int view_b_object_count;
 
@@ -27,14 +25,13 @@ public sealed class DatasetVideoMetadata
     public bool position_changed;
     public bool distance_changed;
     public string distance_change = "none";
+    public bool no_change;
 }
 
 [Serializable]
 public sealed class DatasetVideoQaRecord
 {
-    public string video_id;
     public string video;
-    public string video_path;
     public string scene_type = "tabletop";
     public DatasetVideoMetadata metadata = new DatasetVideoMetadata();
     public List<DatasetQaPair> questions = new List<DatasetQaPair>();

@@ -2,56 +2,57 @@
 # -*- coding: utf-8 -*-
 
 """
-新格式视频数据集拆分与合并工具。
+v15 桌面变化视频数据集拆分与合并工具。
 
-仅支持当前按视频聚合的 JSON 格式：
+支持当前按视频聚合的 JSON 格式：
 
 [
   {
-    "video_id": "scene_000123",
-    "video_path": "data/video_123.mp4",
+    "video": "data/video_000123.mp4",
     "scene_type": "tabletop",
+    "metadata": {
+      "object_replaced": true,
+      "no_change": false,
+      "...": "完整 v15 metadata"
+    },
     "questions": [
       {
         "question": "What changed during the video?",
-        "answer": "The apple was replaced by the cup."
+        "answer": "The apple was replaced by the cup.",
+        "question_type": "descriptive"
       }
     ]
   }
 ]
 
- python3 video_dataset_split_merge.py split    ./Output/videodata.json         datav5/test       datav5/train         --count 100         --seed 42
 拆分：
 
     python3 video_dataset_split_merge.py split \
-        input/videodata.json \
-        output/test100 \
-        output/remain400 \
+        Output/videodata.json \
+        Output/test100 \
+        Output/remain \
         --count 100 \
         --seed 42
 
 合并：
 
     python3 video_dataset_split_merge.py merge \
-        output/test100/videodata.json \
-        output/remain400/videodata.json \
-        --output-dir output/merged
-
-输出目录：
-
-    output_dir/
-    ├── videodata.json
-    └── data/
-        └── *.mp4
+        Output/test100/videodata.json \
+        Output/remain/videodata.json \
+        --output-dir Output/merged
 
 规则：
 
 1. JSON 顶层必须是列表。
-2. 每条记录必须包含 video_id、video_path、scene_type、questions。
-3. scene_type 必须为 tabletop。
-4. 每个视频必须包含 8 组不重复问答。
-5. 一条记录只对应一个视频。
-6. 不兼容旧的 video 或 video + conversations 格式。
+2. 每条记录必须包含 video、scene_type、metadata、questions。
+3. video 必须指向对应 MP4；不再输出 video_id 或 video_path。
+4. scene_type 必须为 tabletop。
+5. metadata 必须包含当前 v15 的完整变化字段，不再输出
+   change_type 或 change_exists，并使用 no_change 表示无变化。
+6. 每个视频必须包含 8 组不重复问答。
+7. 每组问答必须保留 question、answer、question_type。
+8. question_type 只能为 descriptive 或 yes_or_no。
+9. 拆分、合并只改输出视频路径，不改 metadata、问答描述或其他字段。
 """
 
 from __future__ import annotations
@@ -71,6 +72,40 @@ from typing import Any
 
 EXPECTED_SCENE_TYPE = "tabletop"
 EXPECTED_QUESTIONS = 8
+QUESTION_TYPES = {"descriptive", "yes_or_no"}
+DISTANCE_CHANGES = {"none", "increased", "decreased"}
+POSITION_NAMES = {"position_a", "position_b"}
+
+METADATA_LIST_FIELDS = {
+    "view_a_position_a",
+    "view_a_position_b",
+    "view_b_position_a",
+    "view_b_position_b",
+    "view_a_color_a",
+    "view_a_color_b",
+    "view_b_color_a",
+    "view_b_color_b",
+    "changed_positions",
+}
+METADATA_BOOL_FIELDS = {
+    "object_replaced",
+    "object_added",
+    "object_removed",
+    "color_changed",
+    "position_changed",
+    "distance_changed",
+    "no_change",
+}
+METADATA_COUNT_FIELDS = {
+    "view_a_object_count",
+    "view_b_object_count",
+}
+REQUIRED_METADATA_FIELDS = (
+    {"distance_change"}
+    | METADATA_LIST_FIELDS
+    | METADATA_BOOL_FIELDS
+    | METADATA_COUNT_FIELDS
+)
 
 
 @dataclass(frozen=True)
@@ -83,7 +118,7 @@ class DatasetItem:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="拆分或合并新格式的桌面变化视频数据集"
+        description="拆分或合并 v15 桌面变化视频数据集"
     )
     subparsers = parser.add_subparsers(
         dest="command",
@@ -113,23 +148,28 @@ def build_parser() -> argparse.ArgumentParser:
         "--count",
         type=int,
         default=100,
-        help="随机抽取的视频数量，默认100",
+        help="随机抽取的视频数量，默认 100",
     )
     split_parser.add_argument(
         "--seed",
         type=int,
         default=42,
-        help="随机种子，默认42",
+        help="随机种子，默认 42",
     )
     split_parser.add_argument(
         "--overwrite",
         action="store_true",
         help="覆盖非空输出目录",
     )
+    split_parser.add_argument(
+        "--require-all-videos",
+        action="store_true",
+        help="只要有一个 JSON 对应的 MP4 缺失就立即失败",
+    )
 
     merge_parser = subparsers.add_parser(
         "merge",
-        help="把两份或多份新格式数据集合并为一份",
+        help="把两份或多份 v15 数据集合并为一份",
     )
     merge_parser.add_argument(
         "input_jsons",
@@ -152,6 +192,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--overwrite",
         action="store_true",
         help="覆盖非空输出目录",
+    )
+    merge_parser.add_argument(
+        "--require-all-videos",
+        action="store_true",
+        help="只要有一个 JSON 对应的 MP4 缺失就立即失败",
     )
 
     return parser
@@ -185,12 +230,146 @@ def non_empty_string(
     return value.strip()
 
 
+def validate_string_list(
+    value: Any,
+    *,
+    field: str,
+    record_index: int,
+    json_path: Path,
+) -> list[str]:
+    if not isinstance(value, list):
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 "
+            f"metadata.{field} 必须是列表。"
+        )
+
+    result: list[str] = []
+    for value_index, item in enumerate(value, start=1):
+        if not isinstance(item, str) or not item.strip():
+            raise RuntimeError(
+                f"{json_path} 第 {record_index} 条记录的 "
+                f"metadata.{field}[{value_index}] 必须是非空字符串。"
+            )
+        result.append(item)
+    return result
+
+
+def validate_metadata(
+    value: Any,
+    *,
+    record_index: int,
+    json_path: Path,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 metadata "
+            "必须是 JSON 对象。"
+        )
+
+    removed = sorted(
+        {"change_type", "change_exists"} & value.keys()
+    )
+    if removed:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 metadata "
+            "仍包含 v15 已删除的冗余字段："
+            f"{', '.join(removed)}"
+        )
+
+    missing = sorted(REQUIRED_METADATA_FIELDS - value.keys())
+    if missing:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 metadata "
+            f"缺少 v15 字段：{', '.join(missing)}"
+        )
+
+    distance_change = non_empty_string(
+        value.get("distance_change"),
+        field="metadata.distance_change",
+        record_index=record_index,
+        json_path=json_path,
+    )
+    if distance_change not in DISTANCE_CHANGES:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 "
+            f"metadata.distance_change 为 {distance_change!r}，"
+            f"允许值为：{', '.join(sorted(DISTANCE_CHANGES))}。"
+        )
+
+    for field in sorted(METADATA_BOOL_FIELDS):
+        if not isinstance(value.get(field), bool):
+            raise RuntimeError(
+                f"{json_path} 第 {record_index} 条记录的 "
+                f"metadata.{field} 必须是 true 或 false。"
+            )
+
+    for field in sorted(METADATA_COUNT_FIELDS):
+        count = value.get(field)
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise RuntimeError(
+                f"{json_path} 第 {record_index} 条记录的 "
+                f"metadata.{field} 必须是非负整数。"
+            )
+
+    normalized = copy.deepcopy(value)
+    normalized["distance_change"] = distance_change
+
+    for field in sorted(METADATA_LIST_FIELDS):
+        items = validate_string_list(
+            value.get(field),
+            field=field,
+            record_index=record_index,
+            json_path=json_path,
+        )
+        if field == "changed_positions":
+            invalid = sorted(set(items) - POSITION_NAMES)
+            if invalid:
+                raise RuntimeError(
+                    f"{json_path} 第 {record_index} 条记录的 "
+                    "metadata.changed_positions 包含未知位置："
+                    f"{', '.join(invalid)}"
+                )
+        normalized[field] = items
+
+    distance_changed = normalized["distance_changed"]
+    expected_distance_change = distance_change != "none"
+    if distance_changed != expected_distance_change:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 "
+            "metadata.distance_changed 与 distance_change 不一致。"
+        )
+
+    primary_flags = [
+        normalized["object_replaced"],
+        normalized["object_added"],
+        normalized["object_removed"],
+        normalized["color_changed"],
+        normalized["no_change"],
+        normalized["distance_changed"],
+        normalized["position_changed"]
+        and not normalized["distance_changed"],
+    ]
+    if sum(bool(flag) for flag in primary_flags) != 1:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录的 metadata "
+            "变化标志不能唯一确定一种变化情况。"
+        )
+
+    if normalized["no_change"] and normalized["changed_positions"]:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录为 no_change，"
+            "changed_positions 必须为空。"
+        )
+
+    return normalized
+
+
 def validate_questions(
     value: Any,
     *,
     record_index: int,
     json_path: Path,
-) -> list[dict[str, str]]:
+) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise RuntimeError(
             f"{json_path} 第 {record_index} 条记录的 "
@@ -200,10 +379,11 @@ def validate_questions(
     if len(value) != EXPECTED_QUESTIONS:
         raise RuntimeError(
             f"{json_path} 第 {record_index} 条记录包含 "
-            f"{len(value)} 组问答，要求恰好为 {EXPECTED_QUESTIONS} 组。"
+            f"{len(value)} 组问答，要求恰好为 "
+            f"{EXPECTED_QUESTIONS} 组。"
         )
 
-    result: list[dict[str, str]] = []
+    result: list[dict[str, Any]] = []
     question_texts: set[str] = set()
 
     for question_index, item in enumerate(value, start=1):
@@ -225,6 +405,19 @@ def validate_questions(
             record_index=record_index,
             json_path=json_path,
         )
+        question_type = non_empty_string(
+            item.get("question_type"),
+            field=f"questions[{question_index}].question_type",
+            record_index=record_index,
+            json_path=json_path,
+        )
+        if question_type not in QUESTION_TYPES:
+            raise RuntimeError(
+                f"{json_path} 第 {record_index} 条记录的 "
+                f"questions[{question_index}].question_type "
+                f"为 {question_type!r}，只能使用 descriptive "
+                "或 yes_or_no。"
+            )
 
         if question in question_texts:
             raise RuntimeError(
@@ -233,13 +426,12 @@ def validate_questions(
             )
         question_texts.add(question)
 
-        # 输出时只保留新格式规定的 question 和 answer。
-        result.append(
-            {
-                "question": question,
-                "answer": answer,
-            }
-        )
+        # 保留当前和未来增加的问答字段，不改变文档中的问题和答案。
+        normalized = copy.deepcopy(item)
+        normalized["question"] = question
+        normalized["answer"] = answer
+        normalized["question_type"] = question_type
+        result.append(normalized)
 
     return result
 
@@ -255,25 +447,27 @@ def validate_record(
             f"{json_path} 第 {record_index} 条记录不是 JSON 对象。"
         )
 
-    if "video" in record or "conversations" in record:
+    if "conversations" in record:
         raise RuntimeError(
-            f"{json_path} 第 {record_index} 条记录仍是旧格式。"
-            "本脚本只支持 video_id + video_path + scene_type + questions。"
+            f"{json_path} 第 {record_index} 条记录仍含 conversations。"
+            "本脚本只支持当前 v15 的 questions 格式。"
         )
 
-    video_id = non_empty_string(
-        record.get("video_id"),
-        field="video_id",
-        record_index=record_index,
-        json_path=json_path,
+    removed = sorted(
+        {"video_id", "video_path"} & record.keys()
     )
-    video_path = non_empty_string(
-        record.get("video_path"),
-        field="video_path",
+    if removed:
+        raise RuntimeError(
+            f"{json_path} 第 {record_index} 条记录仍包含 v15 "
+            f"已删除的冗余字段：{', '.join(removed)}"
+        )
+
+    video = non_empty_string(
+        record.get("video"),
+        field="video",
         record_index=record_index,
         json_path=json_path,
     ).replace("\\", "/")
-
     scene_type = non_empty_string(
         record.get("scene_type"),
         field="scene_type",
@@ -286,21 +480,23 @@ def validate_record(
             f"为 {scene_type!r}，要求为 {EXPECTED_SCENE_TYPE!r}。"
         )
 
+    metadata = validate_metadata(
+        record.get("metadata"),
+        record_index=record_index,
+        json_path=json_path,
+    )
     questions = validate_questions(
         record.get("questions"),
         record_index=record_index,
         json_path=json_path,
     )
 
-    # 保留未来可能增加的额外字段，但强制覆盖核心字段为规范值。
-    normalized = copy.deepcopy(record)
-    normalized["video_id"] = video_id
-    normalized["video_path"] = video_path
-    normalized["scene_type"] = EXPECTED_SCENE_TYPE
-    normalized["questions"] = questions
-    normalized.pop("video", None)
-    normalized.pop("conversations", None)
-    return normalized
+    return {
+        "video": video,
+        "scene_type": EXPECTED_SCENE_TYPE,
+        "metadata": metadata,
+        "questions": questions,
+    }
 
 
 def load_dataset(path: Path) -> list[dict[str, Any]]:
@@ -309,7 +505,7 @@ def load_dataset(path: Path) -> list[dict[str, Any]]:
     if not isinstance(root, list):
         raise RuntimeError(
             f"{path} 的 JSON 顶层必须是视频记录列表，"
-            "不再支持 data/samples/records/items 包装结构。"
+            "不支持 data/samples/records/items 包装结构。"
         )
 
     records = [
@@ -321,26 +517,16 @@ def load_dataset(path: Path) -> list[dict[str, Any]]:
         for index, record in enumerate(root, start=1)
     ]
 
-    seen_video_ids: dict[str, int] = {}
-    seen_video_paths: dict[str, int] = {}
+    seen_videos: dict[str, int] = {}
 
     for index, record in enumerate(records, start=1):
-        video_id = record["video_id"]
-        video_path = record["video_path"]
-
-        if video_id in seen_video_ids:
+        video = record["video"]
+        if video in seen_videos:
             raise RuntimeError(
-                f"{path} 中 video_id 重复：{video_id}\n"
-                f"第 {seen_video_ids[video_id]} 条和第 {index} 条。"
+                f"{path} 中 video 重复：{video}\n"
+                f"第 {seen_videos[video]} 条和第 {index} 条。"
             )
-        seen_video_ids[video_id] = index
-
-        if video_path in seen_video_paths:
-            raise RuntimeError(
-                f"{path} 中 video_path 重复：{video_path}\n"
-                f"第 {seen_video_paths[video_path]} 条和第 {index} 条。"
-            )
-        seen_video_paths[video_path] = index
+        seen_videos[video] = index
 
     return records
 
@@ -375,6 +561,7 @@ def collect_existing_items(
     records: list[dict[str, Any]],
     *,
     label: str,
+    require_all_videos: bool,
 ) -> tuple[list[DatasetItem], list[str]]:
     items: list[DatasetItem] = []
     missing: list[str] = []
@@ -385,14 +572,14 @@ def collect_existing_items(
     )
 
     for index, record in enumerate(records, start=1):
-        video_path = record["video_path"]
+        video_path = record["video"]
         source = find_video(json_path, video_path)
 
         if source is None:
             missing.append(video_path)
             print(
                 f"[{label}] {index}/{len(records)} | "
-                f"视频缺失并排除：{video_path}",
+                f"视频缺失：{video_path}",
                 flush=True,
             )
             continue
@@ -404,6 +591,12 @@ def collect_existing_items(
             )
         )
 
+    if require_all_videos and missing:
+        raise RuntimeError(
+            f"{json_path} 有 {len(missing)} 个视频缺失；"
+            "已启用 --require-all-videos，因此停止处理。"
+        )
+
     return items, missing
 
 
@@ -412,7 +605,8 @@ def rewrite_video_path(
     new_path: str,
 ) -> dict[str, Any]:
     result = copy.deepcopy(record)
-    result["video_path"] = new_path.replace("\\", "/")
+    normalized = new_path.replace("\\", "/")
+    result["video"] = normalized
     return result
 
 
@@ -421,6 +615,16 @@ def prepare_output_dir(
     overwrite: bool,
 ) -> Path:
     output_dir = output_dir.expanduser().resolve()
+
+    protected = {
+        Path(output_dir.anchor).resolve(),
+        Path.home().resolve(),
+        Path.cwd().resolve(),
+    }
+    if output_dir in protected:
+        raise RuntimeError(
+            f"拒绝把过大的目录作为输出目录：{output_dir}"
+        )
 
     if output_dir.exists():
         if not output_dir.is_dir():
@@ -476,7 +680,7 @@ def safe_component(value: str) -> str:
 def allocate_output_name(
     *,
     source: Path,
-    video_id: str,
+    record_key: str,
     used_names: set[str],
 ) -> str:
     candidate = source.name
@@ -487,7 +691,7 @@ def allocate_output_name(
 
     stem = safe_component(source.stem)
     suffix = source.suffix
-    video_component = safe_component(video_id)
+    video_component = safe_component(record_key)
 
     candidate = f"{stem}__{video_component}{suffix}"
     counter = 2
@@ -510,6 +714,7 @@ def build_partition(
     json_name: str,
     overwrite: bool,
 ) -> tuple[int, int]:
+    output_dir = output_dir.expanduser().resolve()
     data_dir = prepare_output_dir(
         output_dir,
         overwrite,
@@ -521,7 +726,7 @@ def build_partition(
     for index, item in enumerate(items, start=1):
         output_name = allocate_output_name(
             source=item.source_video,
-            video_id=item.record["video_id"],
+            record_key=record_identity(item.record),
             used_names=used_names,
         )
         destination = data_dir / output_name
@@ -543,18 +748,16 @@ def build_partition(
             output_name,
         )
 
-    output_json = output_dir.resolve() / json_name
+    output_json = output_dir / json_name
     write_json(
         output_json,
         output_records,
     )
 
-    actual_videos = len(
-        [
-            path
-            for path in data_dir.iterdir()
-            if path.is_file()
-        ]
+    actual_videos = sum(
+        1
+        for path in data_dir.iterdir()
+        if path.is_file()
     )
     if actual_videos != len(items):
         raise RuntimeError(
@@ -590,6 +793,7 @@ def split_dataset(args: argparse.Namespace) -> int:
         input_json,
         records,
         label="检查",
+        require_all_videos=args.require_all_videos,
     )
 
     if len(valid_items) < args.count:
@@ -602,14 +806,14 @@ def split_dataset(args: argparse.Namespace) -> int:
     random.Random(args.seed).shuffle(shuffled)
 
     selected_items = shuffled[: args.count]
-    selected_ids = {
-        item.record["video_id"]
+    selected_videos = {
+        item.record["video"]
         for item in selected_items
     }
     remaining_items = [
         item
         for item in valid_items
-        if item.record["video_id"] not in selected_ids
+        if item.record["video"] not in selected_videos
     ]
 
     selected_video_count, selected_record_count = build_partition(
@@ -628,16 +832,16 @@ def split_dataset(args: argparse.Namespace) -> int:
         overwrite=args.overwrite,
     )
 
-    if selected_ids & {
-        item.record["video_id"]
+    if selected_videos & {
+        item.record["video"]
         for item in remaining_items
     }:
         raise RuntimeError(
-            "拆分校验失败：两份数据中出现重复 video_id。"
+            "拆分校验失败：两份数据中出现重复 video。"
         )
 
     print("\n拆分完成")
-    print(f"  输入JSON记录：   {len(records)}")
+    print(f"  输入 JSON 记录： {len(records)}")
     print(f"  有效视频：       {len(valid_items)}")
     print(f"  缺失并排除：     {len(missing_paths)}")
     print(
@@ -676,6 +880,22 @@ def canonical_record(record: dict[str, Any]) -> str:
     )
 
 
+def canonical_record_without_video(
+    record: dict[str, Any],
+) -> str:
+    normalized = copy.deepcopy(record)
+    normalized.pop("video", None)
+    return canonical_record(normalized)
+
+
+def record_identity(record: dict[str, Any]) -> str:
+    digest = hashlib.sha256(
+        canonical_record_without_video(record).encode("utf-8")
+    ).hexdigest()[:12]
+    stem = safe_component(Path(record["video"]).stem)
+    return f"{stem}_{digest}"
+
+
 def merge_datasets(args: argparse.Namespace) -> int:
     if len(args.input_jsons) < 2:
         raise RuntimeError(
@@ -698,13 +918,11 @@ def merge_datasets(args: argparse.Namespace) -> int:
     )
 
     merged_records: list[dict[str, Any]] = []
-    record_by_video_id: dict[str, dict[str, Any]] = {}
+    seen_records: set[tuple[str, tuple[int, str]]] = set()
 
-    signature_to_name: dict[tuple[int, str], str] = {}
     used_output_names: set[str] = set()
 
     copied_count = 0
-    reused_video_count = 0
     duplicate_record_count = 0
     missing_count = 0
 
@@ -714,6 +932,7 @@ def merge_datasets(args: argparse.Namespace) -> int:
             json_path,
             records,
             label="合并检查",
+            require_all_videos=args.require_all_videos,
         )
         missing_count += len(missing_paths)
 
@@ -721,48 +940,37 @@ def merge_datasets(args: argparse.Namespace) -> int:
             signature = file_signature(
                 item.source_video
             )
+            canonical = canonical_record_without_video(item.record)
+            identity = (canonical, signature)
+            if identity in seen_records:
+                duplicate_record_count += 1
+                continue
 
-            if signature in signature_to_name:
-                output_name = signature_to_name[signature]
-                reused_video_count += 1
-            else:
-                output_name = allocate_output_name(
-                    source=item.source_video,
-                    video_id=item.record["video_id"],
-                    used_names=used_output_names,
-                )
-                shutil.copy2(
-                    item.source_video,
-                    data_dir / output_name,
-                )
-                signature_to_name[signature] = output_name
-                copied_count += 1
-                print(
-                    f"[合并复制] {copied_count} | "
-                    f"{item.source_video.name} -> {output_name}",
-                    flush=True,
-                )
+            # v15 不再输出 video_id。只有视频字节以及 metadata/问答都
+            # 相同的记录才视为重复；其他记录即使文件名相同也分别保留。
+            record_key = record_identity(item.record)
+            output_name = allocate_output_name(
+                source=item.source_video,
+                record_key=record_key,
+                used_names=used_output_names,
+            )
+            shutil.copy2(
+                item.source_video,
+                data_dir / output_name,
+            )
+            copied_count += 1
+            print(
+                f"[合并复制] {copied_count} | "
+                f"{item.source_video.name} -> {output_name}",
+                flush=True,
+            )
 
             rewritten = rewrite_video_path(
                 item.record,
                 f"data/{output_name}",
             )
-            video_id = rewritten["video_id"]
-
-            previous = record_by_video_id.get(video_id)
-            if previous is None:
-                record_by_video_id[video_id] = rewritten
-                merged_records.append(rewritten)
-                continue
-
-            if canonical_record(previous) == canonical_record(rewritten):
-                duplicate_record_count += 1
-                continue
-
-            raise RuntimeError(
-                f"合并时发现冲突的 video_id：{video_id}\n"
-                "同一个 video_id 对应了不同的视频、问题或答案。"
-            )
+            seen_records.add(identity)
+            merged_records.append(rewritten)
 
     output_json = output_dir / args.json_name
     write_json(
@@ -770,12 +978,10 @@ def merge_datasets(args: argparse.Namespace) -> int:
         merged_records,
     )
 
-    actual_videos = len(
-        [
-            path
-            for path in data_dir.iterdir()
-            if path.is_file()
-        ]
+    actual_videos = sum(
+        1
+        for path in data_dir.iterdir()
+        if path.is_file()
     )
     if actual_videos != copied_count:
         raise RuntimeError(
@@ -786,18 +992,17 @@ def merge_datasets(args: argparse.Namespace) -> int:
     reloaded = load_dataset(output_json)
     if len(reloaded) != len(merged_records):
         raise RuntimeError(
-            f"合并JSON校验失败：应有 {len(merged_records)} 条记录，"
+            f"合并 JSON 校验失败：应有 {len(merged_records)} 条记录，"
             f"实际为 {len(reloaded)} 条。"
         )
 
     print("\n合并完成")
     print(f"  输入数据集：     {len(input_jsons)} 份")
     print(f"  输出唯一视频：   {actual_videos}")
-    print(f"  复用相同视频：   {reused_video_count}")
     print(f"  跳过重复记录：   {duplicate_record_count}")
     print(f"  缺失并排除：     {missing_count}")
-    print(f"  输出JSON记录：   {len(merged_records)}")
-    print(f"  输出JSON：       {output_json}")
+    print(f"  输出 JSON 记录： {len(merged_records)}")
+    print(f"  输出 JSON：      {output_json}")
     print(f"  视频目录：       {data_dir}")
     return 0
 
