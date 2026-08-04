@@ -158,3 +158,4 @@ Assets/RawModels
 Assets/Resources/
 .*
 */__pycache__/
+ModelSourceArchive/

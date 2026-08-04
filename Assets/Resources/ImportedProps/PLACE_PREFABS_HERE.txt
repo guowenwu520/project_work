@@ -1,7 +1,0 @@
-模型包版本不再把用户 Prefab 放入 Resources。
-
-预处理后的 Prefab 位于：
-Assets/ModelPacks/Generated
-
-构建后的运行时模型包位于项目根目录：
-ModelBundles
