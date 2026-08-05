@@ -1,63 +1,550 @@
+using System;
 using UnityEngine;
+
+[Serializable]
+public sealed class ChangeBlindnessTimingData
+{
+    public float initialHold;
+    public float moveAway;
+    public float hiddenChange;
+    public float returnToTable;
+    public float finalHold;
+    public float swapAt;
+    public float totalDuration;
+}
+
+public sealed class ChangeBlindnessTiming
+{
+    public const float MinimumObservationDuration = 2f;
+    public const float MaximumObservationDuration = 10f;
+    public const float MinimumMovementDuration = 2f;
+    public const float MaximumMovementDuration = 7f;
+
+    public float InitialHoldDuration { get; private set; }
+    public float MoveAwayDuration { get; private set; }
+    public float HiddenChangeDuration { get; private set; }
+    public float ReturnDuration { get; private set; }
+    public float FinalHoldDuration { get; private set; }
+
+    public float TotalDuration
+    {
+        get
+        {
+            return
+                InitialHoldDuration +
+                MoveAwayDuration +
+                HiddenChangeDuration +
+                ReturnDuration +
+                FinalHoldDuration;
+        }
+    }
+
+    public float ChangeTime
+    {
+        get
+        {
+            return
+                InitialHoldDuration +
+                MoveAwayDuration +
+                HiddenChangeDuration * 0.5f;
+        }
+    }
+
+    private ChangeBlindnessTiming(
+        float initialHoldDuration,
+        float moveAwayDuration,
+        float hiddenChangeDuration,
+        float returnDuration,
+        float finalHoldDuration)
+    {
+        InitialHoldDuration = initialHoldDuration;
+        MoveAwayDuration = moveAwayDuration;
+        HiddenChangeDuration = hiddenChangeDuration;
+        ReturnDuration = returnDuration;
+        FinalHoldDuration = finalHoldDuration;
+    }
+
+    public static ChangeBlindnessTiming Create(
+        int seed,
+        string profile)
+    {
+        string normalized =
+            (profile ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant();
+
+        if (normalized == "fastest")
+        {
+            return new ChangeBlindnessTiming(
+                MinimumObservationDuration,
+                MinimumMovementDuration,
+                MinimumMovementDuration,
+                MinimumMovementDuration,
+                MinimumObservationDuration);
+        }
+
+        if (normalized == "slowest")
+        {
+            return new ChangeBlindnessTiming(
+                MaximumObservationDuration,
+                MaximumMovementDuration,
+                MaximumMovementDuration,
+                MaximumMovementDuration,
+                MaximumObservationDuration);
+        }
+
+        var random = new System.Random(
+            unchecked(seed * 1103515245 + 12345));
+
+        return new ChangeBlindnessTiming(
+            SampleDuration(
+                random,
+                MinimumObservationDuration,
+                MaximumObservationDuration),
+            SampleDuration(
+                random,
+                MinimumMovementDuration,
+                MaximumMovementDuration),
+            SampleDuration(
+                random,
+                MinimumMovementDuration,
+                MaximumMovementDuration),
+            SampleDuration(
+                random,
+                MinimumMovementDuration,
+                MaximumMovementDuration),
+            SampleDuration(
+                random,
+                MinimumObservationDuration,
+                MaximumObservationDuration));
+    }
+
+    public ChangeBlindnessTimingData ToData()
+    {
+        return new ChangeBlindnessTimingData
+        {
+            initialHold = InitialHoldDuration,
+            moveAway = MoveAwayDuration,
+            hiddenChange = HiddenChangeDuration,
+            returnToTable = ReturnDuration,
+            finalHold = FinalHoldDuration,
+            swapAt = ChangeTime,
+            totalDuration = TotalDuration
+        };
+    }
+
+    private static float SampleDuration(
+        System.Random random,
+        float minimum,
+        float maximum)
+    {
+        int minimumMilliseconds =
+            Mathf.RoundToInt(minimum * 1000f);
+        int maximumMilliseconds =
+            Mathf.RoundToInt(maximum * 1000f);
+
+        return random.Next(
+                   minimumMilliseconds,
+                   maximumMilliseconds + 1) /
+               1000f;
+    }
+}
+
+[Serializable]
+public sealed class ChangeBlindnessCameraRouteData
+{
+    public string routeId;
+    public string profile;
+    public int finalViewAngleDegrees;
+    public float signedViewAngleDegrees;
+    public int routeVariant;
+    public string direction;
+    public float pathLengthMeters;
+    public Vector3 startPosition;
+    public Vector3 controlPoint1;
+    public Vector3 controlPoint2;
+    public Vector3 endPosition;
+}
+
+public sealed class ChangeBlindnessCameraRoute
+{
+    private static readonly int[] SupportedAngles =
+    {
+        45,
+        90,
+        135,
+        180
+    };
+
+    private readonly Vector3 point0;
+    private readonly Vector3 point3;
+    private readonly Vector3 routeCenter;
+    private readonly Vector3 startOutward;
+    private readonly float startRadius;
+    private readonly float endInset;
+    private readonly float detourInset;
+    private readonly int detourWaveCount;
+
+    public string RouteId { get; private set; }
+    public string Profile { get; private set; }
+    public int FinalViewAngleDegrees { get; private set; }
+    public float SignedViewAngleDegrees { get; private set; }
+    public int RouteVariant { get; private set; }
+    public float DirectionSign { get; private set; }
+    public float PathLengthMeters { get; private set; }
+    public Vector3 StartPosition { get { return point0; } }
+    public Vector3 EndPosition { get { return point3; } }
+
+    private ChangeBlindnessCameraRoute(
+        string profile,
+        int finalViewAngleDegrees,
+        int routeVariant,
+        float directionSign,
+        Vector3 start,
+        Vector3 end,
+        Vector3 center,
+        Vector3 initialOutward,
+        float initialRadius,
+        float finalInset,
+        float routeDetourInset,
+        int routeDetourWaveCount)
+    {
+        Profile = profile;
+        FinalViewAngleDegrees = finalViewAngleDegrees;
+        RouteVariant = routeVariant;
+        DirectionSign = directionSign;
+        SignedViewAngleDegrees =
+            finalViewAngleDegrees *
+            directionSign;
+
+        point0 = start;
+        point3 = end;
+        routeCenter = center;
+        startOutward = initialOutward;
+        startRadius = initialRadius;
+        endInset = finalInset;
+        detourInset = routeDetourInset;
+        detourWaveCount = routeDetourWaveCount;
+
+        RouteId =
+            "angle_" +
+            finalViewAngleDegrees.ToString("D3") +
+            "_route_" +
+            routeVariant;
+
+        PathLengthMeters = EstimateLength(160);
+    }
+
+    public static ChangeBlindnessCameraRoute Create(
+        Vector3 startPosition,
+        Quaternion startRotation,
+        Vector3 focusPoint,
+        int seed,
+        int forcedAngleDegrees,
+        int forcedRouteVariant,
+        string requestedProfile)
+    {
+        string profile =
+            NormalizeProfile(requestedProfile);
+
+        int angle;
+        int variant;
+
+        if (profile == "shortest")
+        {
+            angle = 45;
+            variant = 1;
+        }
+        else if (profile == "longest")
+        {
+            angle = 180;
+            variant = 2;
+        }
+        else
+        {
+            var random = new System.Random(
+                unchecked(seed * 1664525 + 1013904223));
+
+            angle = IsSupportedAngle(forcedAngleDegrees)
+                ? forcedAngleDegrees
+                : SupportedAngles[random.Next(SupportedAngles.Length)];
+
+            variant =
+                forcedRouteVariant == 1 ||
+                forcedRouteVariant == 2
+                    ? forcedRouteVariant
+                    : random.Next(1, 3);
+        }
+
+        float directionSign =
+            (unchecked(seed * 31 + angle * 7 + variant) & 1) == 0
+                ? 1f
+                : -1f;
+
+        Vector3 eyeLevelCenter = new Vector3(
+            focusPoint.x,
+            startPosition.y,
+            focusPoint.z);
+
+        Vector3 startRadial =
+            startPosition -
+            eyeLevelCenter;
+
+        startRadial.y = 0f;
+
+        if (startRadial.sqrMagnitude < 0.25f)
+        {
+            startRadial =
+                -Vector3.ProjectOnPlane(
+                    startRotation * Vector3.forward,
+                    Vector3.up);
+
+            if (startRadial.sqrMagnitude < 0.0001f)
+            {
+                startRadial = Vector3.back;
+            }
+
+            startRadial.Normalize();
+            startRadial *= 3f;
+        }
+
+        float radius = startRadial.magnitude;
+        Vector3 startOutward = startRadial.normalized;
+        Vector3 endOutward =
+            Quaternion.AngleAxis(
+                angle * directionSign,
+                Vector3.up) *
+            startOutward;
+
+        // Pull every destination slightly toward the table. This leaves a
+        // stable clearance from the room walls without changing the chosen
+        // 45/90/135/180-degree final viewing angle.
+        float finalInset =
+            Mathf.Clamp(
+                radius * 0.12f,
+                0.30f,
+                0.50f);
+
+        Vector3 endPosition =
+            eyeLevelCenter +
+            endOutward * (radius - finalInset);
+
+        endPosition.y = startPosition.y;
+
+        float routeDetourInset;
+        int routeDetourWaveCount;
+
+        if (variant == 1)
+        {
+            // Short route: one shallow inward bend.
+            routeDetourInset =
+                Mathf.Clamp(
+                    radius * 0.05f,
+                    0.12f,
+                    0.25f);
+
+            routeDetourWaveCount = 1;
+        }
+        else
+        {
+            // Long route: one wide, shallow inward sweep. Staying near the
+            // original safe orbit keeps it longer than route 1, while the
+            // single bend avoids repeated left/right heading oscillations.
+            routeDetourInset =
+                Mathf.Clamp(
+                    radius * 0.02f,
+                    0.05f,
+                    0.10f);
+
+            routeDetourWaveCount = 1;
+        }
+
+        return new ChangeBlindnessCameraRoute(
+            profile,
+            angle,
+            variant,
+            directionSign,
+            startPosition,
+            endPosition,
+            eyeLevelCenter,
+            startOutward,
+            radius,
+            finalInset,
+            routeDetourInset,
+            routeDetourWaveCount);
+    }
+
+    public Vector3 EvaluatePosition(float progress)
+    {
+        float t = Mathf.Clamp01(progress);
+
+        // The route is planned in polar coordinates around the tabletop.
+        // Both radial offsets are non-negative, so no sampled point can be
+        // farther from the table than the original camera position.
+        float settledProgress =
+            t * t * t *
+            (t * (t * 6f - 15f) + 10f);
+
+        float detourPhase =
+            t *
+            detourWaveCount *
+            Mathf.PI;
+
+        float detourEnvelope =
+            Mathf.Sin(detourPhase);
+
+        detourEnvelope *= detourEnvelope;
+
+        float radius =
+            startRadius -
+            endInset * settledProgress -
+            detourInset * detourEnvelope;
+
+        Vector3 outward =
+            Quaternion.AngleAxis(
+                SignedViewAngleDegrees * t,
+                Vector3.up) *
+            startOutward;
+
+        Vector3 position =
+            routeCenter +
+            outward * radius;
+
+        position.y = point0.y;
+        return position;
+    }
+
+    public Vector3 EvaluateTangent(float progress)
+    {
+        float t = Mathf.Clamp01(progress);
+        const float tangentSampleDistance = 0.001f;
+
+        float before =
+            Mathf.Max(
+                0f,
+                t - tangentSampleDistance);
+
+        float after =
+            Mathf.Min(
+                1f,
+                t + tangentSampleDistance);
+
+        Vector3 derivative =
+            EvaluatePosition(after) -
+            EvaluatePosition(before);
+
+        derivative.y = 0f;
+
+        if (derivative.sqrMagnitude < 0.0001f)
+        {
+            derivative = point3 - point0;
+            derivative.y = 0f;
+        }
+
+        if (derivative.sqrMagnitude < 0.0001f)
+        {
+            derivative = Vector3.forward;
+        }
+
+        return derivative.normalized;
+    }
+
+    public ChangeBlindnessCameraRouteData ToData()
+    {
+        return new ChangeBlindnessCameraRouteData
+        {
+            routeId = RouteId,
+            profile = Profile,
+            finalViewAngleDegrees = FinalViewAngleDegrees,
+            signedViewAngleDegrees = SignedViewAngleDegrees,
+            routeVariant = RouteVariant,
+            direction = DirectionSign > 0f ? "counterclockwise" : "clockwise",
+            pathLengthMeters = PathLengthMeters,
+            startPosition = point0,
+            // Preserve the existing annotation schema. These fields now
+            // contain safe route guide points rather than Bezier handles.
+            controlPoint1 = EvaluatePosition(1f / 3f),
+            controlPoint2 = EvaluatePosition(2f / 3f),
+            endPosition = point3
+        };
+    }
+
+    private float EstimateLength(int samples)
+    {
+        float length = 0f;
+        Vector3 previous = point0;
+
+        for (int i = 1; i <= samples; i++)
+        {
+            Vector3 current =
+                EvaluatePosition(
+                    i / (float)samples);
+
+            length +=
+                Vector3.Distance(
+                    previous,
+                    current);
+
+            previous = current;
+        }
+
+        return length;
+    }
+
+    private static bool IsSupportedAngle(int angle)
+    {
+        for (int i = 0; i < SupportedAngles.Length; i++)
+        {
+            if (SupportedAngles[i] == angle)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string NormalizeProfile(string value)
+    {
+        string normalized =
+            (value ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant();
+
+        if (normalized == "shortest" ||
+            normalized == "longest")
+        {
+            return normalized;
+        }
+
+        return "random";
+    }
+}
 
 public sealed class ChangeBlindnessSequence : MonoBehaviour
 {
-    // Keep the original 31-second capture duration.
-    public const float InitialHoldDuration = 8f;
-    public const float TurnAwayDuration = 3f;
-    public const float WalkAroundDuration = 9f;
-    public const float TurnBackDuration = 3f;
-    public const float FinalHoldDuration = 8f;
-
-    public const float TotalDuration =
-        InitialHoldDuration +
-        TurnAwayDuration +
-        WalkAroundDuration +
-        TurnBackDuration +
-        FinalHoldDuration;
-
-    // During walking, the gaze primarily follows the path tangent.
-    // A small inward component makes the first turn gentler while keeping
-    // the tabletop outside the normal camera field of view.
     private const float InwardLookWeight = 0.22f;
-
-    // The first visible head turn is explicitly limited to 30 degrees.
-    // Further rotation happens gradually while the person follows the arc.
-    private const float InitialTurnDegrees = 30f;
-
-    // Fraction of the walking stage used to align the body from the initial
-    // 30-degree heading to the curved-path walking direction.
+    private const float InitialTurnMaximumDegrees = 30f;
     private const float WalkingHeadingBlendFraction = 0.32f;
-
-    // Pull only the middle of the route toward the table. Start and end
-    // positions remain unchanged.
-    private const float RouteInsetRatio = 0.18f;
-    private const float MinimumRouteInset = 0.40f;
-    private const float MaximumRouteInset = 0.78f;
+    private const float ReturnTurnLeadStart = 0.82f;
+    private const float ReturnTurnLeadShare = 0.15f;
 
     private Transform cameraTransform;
-
     private Vector3 focusPoint;
-    private Vector3 eyeLevelCenter;
-
     private Vector3 startPosition;
     private Quaternion startRotation;
-
-    private Vector3 startRadial;
-    private Vector3 endPosition;
+    private Quaternion routeStartRotation;
     private Quaternion initialTurnRotation;
-    private Quaternion startWalkRotation;
-    private Quaternion endWalkRotation;
+    private Quaternion routeArrivalRotation;
     private Quaternion endLookRotation;
-
-    private float walkRadius;
-    private float routeInset;
-    private float arcDirection;
+    private Vector3 tableTurnStartHorizontal;
+    private float tableTurnSignedYawDegrees;
+    private float tableTurnStartPitchDegrees;
+    private float tableTurnEndPitchDegrees;
     private float cameraNoiseSeed;
 
     private GameObject[] originalsToHide;
     private GameObject[] replacementsToShow;
-
     private Transform[] repositionTargets;
     private Vector3[] beforeLocalPositions;
     private Quaternion[] beforeLocalRotations;
@@ -65,6 +552,8 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
     private Quaternion[] afterLocalRotations;
 
     private FrameSequenceCapture capture;
+    private ChangeBlindnessTiming timing;
+    private ChangeBlindnessCameraRoute route;
 
     private bool shouldApplyChange;
     private bool loop;
@@ -79,6 +568,8 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
         bool enableChange,
         bool shouldLoop,
         FrameSequenceCapture captureController,
+        ChangeBlindnessTiming timingConfig,
+        ChangeBlindnessCameraRoute routeConfig,
         Transform[] transformsToReposition = null,
         Vector3[] targetLocalPositions = null,
         Quaternion[] targetLocalRotations = null,
@@ -88,10 +579,15 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
         cameraTransform = targetCamera;
         originalsToHide = originals;
         replacementsToShow = replacements;
-
         shouldApplyChange = enableChange;
         loop = shouldLoop;
         capture = captureController;
+
+        timing =
+            timingConfig ??
+            ChangeBlindnessTiming.Create(
+                movementSeed,
+                "random");
 
         repositionTargets = transformsToReposition;
         afterLocalPositions = targetLocalPositions;
@@ -101,15 +597,67 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
 
         startPosition = cameraTransform.position;
         startRotation = cameraTransform.rotation;
-
         focusPoint =
             sceneFocusPoint ??
             EstimateFocusPoint(
                 startPosition,
                 startRotation);
 
-        ConfigureOppositeSidePath(movementSeed);
+        route =
+            routeConfig ??
+            ChangeBlindnessCameraRoute.Create(
+                startPosition,
+                startRotation,
+                focusPoint,
+                movementSeed,
+                0,
+                0,
+                "random");
 
+        // The route derivative defines the walking direction. The arrival
+        // direction then anchors one continuous signed turn toward the table.
+        routeStartRotation =
+            BuildRouteRotation(
+                route.EvaluatePosition(0f),
+                route.EvaluateTangent(0f));
+
+        float initialTurnAngle =
+            Quaternion.Angle(
+                startRotation,
+                routeStartRotation);
+
+        float initialTurnProgress =
+            initialTurnAngle <= 0.001f
+                ? 1f
+                : Mathf.Min(
+                    1f,
+                    InitialTurnMaximumDegrees /
+                    initialTurnAngle);
+
+        // Only make a gentle turn while standing still. The rest of the
+        // heading change is completed continuously during early walking.
+        initialTurnRotation =
+            Quaternion.SlerpUnclamped(
+                startRotation,
+                routeStartRotation,
+                initialTurnProgress);
+
+        routeArrivalRotation =
+            BuildRouteRotation(
+                route.EvaluatePosition(1f),
+                route.EvaluateTangent(1f));
+
+        endLookRotation =
+            LookAtFocusFrom(
+                route.EndPosition);
+
+        ConfigureTableTurn(
+            routeArrivalRotation,
+            endLookRotation);
+
+        // The final part of the walking route already begins the same turn
+        // that continues during returnToTable. Both phases therefore share
+        // one planned rotation curve and one explicit turn direction.
         cameraNoiseSeed =
             Mathf.Abs(movementSeed % 100000) * 0.0137f +
             Mathf.Abs(startPosition.GetHashCode() % 1000) * 0.01f;
@@ -119,114 +667,15 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
             false);
 
         Debug.Log(
-            "Forward-walking arc camera configured: start=" +
-            startPosition.ToString("F3") +
-            ", opposite=" +
-            endPosition.ToString("F3") +
-            ", direction=" +
-            (arcDirection > 0f ? "left arc" : "right arc") +
-            ", middle inset=" +
-            routeInset.ToString("F2") +
-            "m. Initial head turn is limited to " +
-            InitialTurnDegrees.ToString("F0") +
-            " degrees; body heading then aligns gradually while walking.");
-    }
-
-    private void ConfigureOppositeSidePath(int movementSeed)
-    {
-        eyeLevelCenter = new Vector3(
-            focusPoint.x,
-            startPosition.y,
-            focusPoint.z);
-
-        Vector3 radial =
-            startPosition - eyeLevelCenter;
-
-        radial.y = 0f;
-
-        if (radial.sqrMagnitude < 0.25f)
-        {
-            radial =
-                -Vector3.ProjectOnPlane(
-                    startRotation * Vector3.forward,
-                    Vector3.up);
-
-            if (radial.sqrMagnitude < 0.0001f)
-            {
-                radial = Vector3.back;
-            }
-
-            radial.Normalize();
-            radial *= 3f;
-        }
-
-        walkRadius = radial.magnitude;
-        startRadial = radial.normalized;
-
-        routeInset = Mathf.Clamp(
-            walkRadius * RouteInsetRatio,
-            MinimumRouteInset,
-            MaximumRouteInset);
-
-        routeInset = Mathf.Min(
-            routeInset,
-            Mathf.Max(0f, walkRadius - 1.35f));
-
-        // Stable left/right route for the same scene seed.
-        arcDirection =
-            (movementSeed & 1) == 0
-                ? 1f
-                : -1f;
-
-        Vector3 endRadial = -startRadial;
-
-        endPosition =
-            eyeLevelCenter +
-            endRadial * walkRadius;
-
-        endPosition.y = startPosition.y;
-
-        startWalkRotation =
-            BuildWalkingRotation(startRadial);
-
-        Vector3 startHorizontalForward =
-            Vector3.ProjectOnPlane(
-                startRotation * Vector3.forward,
-                Vector3.up);
-
-        if (startHorizontalForward.sqrMagnitude < 0.0001f)
-        {
-            startHorizontalForward = -startRadial;
-        }
-
-        startHorizontalForward.Normalize();
-
-        Vector3 initialTravelTangent =
-            GetTravelTangent(startRadial);
-
-        float fullRouteTurn =
-            Vector3.SignedAngle(
-                startHorizontalForward,
-                initialTravelTangent,
-                Vector3.up);
-
-        float limitedInitialTurn =
-            Mathf.Clamp(
-                fullRouteTurn,
-                -InitialTurnDegrees,
-                InitialTurnDegrees);
-
-        initialTurnRotation =
-            Quaternion.AngleAxis(
-                limitedInitialTurn,
-                Vector3.up) *
-            startRotation;
-
-        endWalkRotation =
-            BuildWalkingRotation(endRadial);
-
-        endLookRotation =
-            LookAtFocusFrom(endPosition);
+            "Smooth planned camera route configured: " +
+            route.RouteId +
+            ", signed angle=" +
+            route.SignedViewAngleDegrees.ToString("F0") +
+            " degrees, path=" +
+            route.PathLengthMeters.ToString("F3") +
+            "m, total=" +
+            timing.TotalDuration.ToString("F3") +
+            "s. Phase boundaries share the same position and rotation.");
     }
 
     private void Update()
@@ -241,23 +690,18 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
         float timelineTime =
             Mathf.Min(
                 elapsed,
-                TotalDuration);
+                timing.TotalDuration);
 
         ApplyTimeline(timelineTime);
 
-        float changeTime =
-            InitialHoldDuration +
-            TurnAwayDuration +
-            WalkAroundDuration * 0.5f;
-
         if (shouldApplyChange &&
             !changed &&
-            timelineTime >= changeTime)
+            timelineTime >= timing.ChangeTime)
         {
             ApplyChange();
         }
 
-        if (elapsed >= TotalDuration)
+        if (elapsed >= timing.TotalDuration)
         {
             if (loop)
             {
@@ -267,12 +711,10 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
             {
                 completed = true;
 
-                cameraTransform.position =
-                    endPosition;
-
-                cameraTransform.rotation =
-                    endLookRotation;
-
+                // Do not assign endLookRotation again here. ApplyTimeline
+                // already produced the final pose, including continuous
+                // natural eye motion. Reassigning used to cause a one-frame
+                // completion snap.
                 capture?.MarkSequenceComplete();
             }
         }
@@ -280,202 +722,206 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
 
     private void ApplyTimeline(float t)
     {
-        float turnAwayEnd =
-            InitialHoldDuration +
-            TurnAwayDuration;
+        float moveAwayEnd =
+            timing.InitialHoldDuration +
+            timing.MoveAwayDuration;
 
-        float walkEnd =
-            turnAwayEnd +
-            WalkAroundDuration;
+        float routeEnd =
+            moveAwayEnd +
+            timing.HiddenChangeDuration;
 
-        float turnBackEnd =
-            walkEnd +
-            TurnBackDuration;
+        float returnEnd =
+            routeEnd +
+            timing.ReturnDuration;
 
         Vector3 basePosition;
         Quaternion baseRotation;
+        float walkingWeight = 0f;
+        float routeProgress = 0f;
 
-        bool walking = false;
-        float walkProgress = 0f;
-
-        if (t < InitialHoldDuration)
+        if (t < timing.InitialHoldDuration)
         {
             basePosition = startPosition;
             baseRotation = startRotation;
         }
-        else if (t < turnAwayEnd)
+        else if (t < moveAwayEnd)
         {
             float normalized =
-                (t - InitialHoldDuration) /
-                TurnAwayDuration;
+                SafeProgress(
+                    t - timing.InitialHoldDuration,
+                    timing.MoveAwayDuration);
 
             float eased =
                 SmootherStep(normalized);
 
-            Vector3 firstTravelTangent =
-                GetTravelTangent(startRadial);
-
-            basePosition =
-                startPosition +
-                firstTravelTangent *
-                Mathf.Sin(eased * Mathf.PI) *
-                0.025f;
-
-            // Only make a gentle 30-degree turn before walking.
+            basePosition = startPosition;
             baseRotation =
                 Quaternion.SlerpUnclamped(
                     startRotation,
                     initialTurnRotation,
                     eased);
         }
-        else if (t < walkEnd)
+        else if (t < routeEnd)
         {
-            walking = true;
-
-            walkProgress =
-                (t - turnAwayEnd) /
-                WalkAroundDuration;
+            routeProgress =
+                SafeProgress(
+                    t - moveAwayEnd,
+                    timing.HiddenChangeDuration);
 
             float travelProgress =
-                SmootherStep(walkProgress);
-
-            float arcAngle =
-                arcDirection *
-                180f *
-                travelProgress;
-
-            Vector3 radial =
-                Quaternion.AngleAxis(
-                    arcAngle,
-                    Vector3.up) *
-                startRadial;
-
-            Vector3 tangent =
-                GetTravelTangent(radial);
-
-            // Keep the exact start and opposite-side end positions, but
-            // pull the middle of the route inward so it stays away from the
-            // side wall. Squared sine gives zero lateral slope at both ends.
-            float insetEnvelope =
-                Mathf.Sin(
-                    travelProgress *
-                    Mathf.PI);
-
-            insetEnvelope *=
-                insetEnvelope;
-
-            float currentRadius =
-                walkRadius -
-                routeInset *
-                insetEnvelope;
+                SmootherStep(routeProgress);
 
             basePosition =
-                eyeLevelCenter +
-                radial * currentRadius;
+                route.EvaluatePosition(
+                    travelProgress);
 
-            // Important:
-            // The camera follows the walking direction, so optical flow
-            // always looks like forward motion. There is no independent
-            // head pan; this rotation is only the body's natural turn
-            // while following the curved path.
-            Quaternion curvedPathRotation =
-                BuildWalkingRotation(radial);
+            Quaternion walkingRotation =
+                BuildRouteRotation(
+                    basePosition,
+                    route.EvaluateTangent(
+                        travelProgress));
 
-            float headingBlend =
+            float walkingHeadingBlend =
+                SafeProgress(
+                    routeProgress,
+                    WalkingHeadingBlendFraction);
+
+            walkingHeadingBlend =
                 SmootherStep(
-                    Mathf.Clamp01(
-                        walkProgress /
-                        WalkingHeadingBlendFraction));
+                    walkingHeadingBlend);
 
-            baseRotation =
+            // The first walking frame starts at exactly the final stationary
+            // turn rotation. During the first 32% of the route it converges
+            // smoothly to the actual route tangent instead of snapping to it.
+            Quaternion routeRotation =
                 Quaternion.SlerpUnclamped(
                     initialTurnRotation,
-                    curvedPathRotation,
-                    headingBlend);
+                    walkingRotation,
+                    walkingHeadingBlend);
+
+            float turnLead =
+                SafeProgress(
+                    routeProgress -
+                    ReturnTurnLeadStart,
+                    1f -
+                    ReturnTurnLeadStart);
+
+            turnLead =
+                SmootherStep(turnLead);
+
+            if (turnLead > 0f)
+            {
+                Quaternion plannedTurnRotation =
+                    EvaluateTableTurnRotation(
+                        ReturnTurnLeadShare *
+                        turnLead);
+
+                baseRotation =
+                    Quaternion.SlerpUnclamped(
+                        routeRotation,
+                        plannedTurnRotation,
+                        turnLead);
+            }
+            else
+            {
+                baseRotation = routeRotation;
+            }
+
+            walkingWeight =
+                Mathf.Sin(
+                    routeProgress *
+                    Mathf.PI);
+
+            walkingWeight *= walkingWeight;
 
             AddWalkingBodyMotion(
-                walkProgress,
-                tangent,
+                routeProgress,
+                route.EvaluateTangent(
+                    travelProgress),
                 ref basePosition);
         }
-        else if (t < turnBackEnd)
+        else if (t < returnEnd)
         {
             float normalized =
-                (t - walkEnd) /
-                TurnBackDuration;
+                SafeProgress(
+                    t - routeEnd,
+                    timing.ReturnDuration);
 
             float eased =
                 SmootherStep(normalized);
 
-            Vector3 finalTravelTangent =
-                GetTravelTangent(-startRadial);
+            basePosition = route.EndPosition;
 
-            basePosition =
-                endPosition +
-                finalTravelTangent *
-                Mathf.Sin(eased * Mathf.PI) *
-                0.025f;
-
-            // Only after reaching the opposite side does the viewer
-            // turn from the walking direction back toward the tabletop.
-            baseRotation =
-                Quaternion.SlerpUnclamped(
-                    endWalkRotation,
-                    endLookRotation,
+            float tableTurnProgress =
+                Mathf.Lerp(
+                    ReturnTurnLeadShare,
+                    1f,
                     eased);
+
+            // Continue the exact same signed yaw/pitch curve that began near
+            // the end of the walking route. No new transition time is used.
+            baseRotation =
+                EvaluateTableTurnRotation(
+                    tableTurnProgress);
         }
         else
         {
-            basePosition = endPosition;
+            basePosition = route.EndPosition;
             baseRotation = endLookRotation;
         }
 
         ApplyNaturalEyeMotion(
             t,
-            walking,
+            walkingWeight,
             ref basePosition,
             ref baseRotation);
 
-        cameraTransform.position =
-            basePosition;
-
-        cameraTransform.rotation =
-            baseRotation;
+        cameraTransform.position = basePosition;
+        cameraTransform.rotation = baseRotation;
     }
 
-    private Quaternion BuildWalkingRotation(
-        Vector3 radial)
+    private Quaternion BuildRouteRotation(
+        Vector3 position,
+        Vector3 routeTangent)
     {
-        Vector3 outward =
+        Vector3 tangent =
             Vector3.ProjectOnPlane(
-                radial,
+                routeTangent,
                 Vector3.up);
 
-        if (outward.sqrMagnitude < 0.0001f)
+        if (tangent.sqrMagnitude < 0.0001f)
         {
-            outward = Vector3.forward;
+            tangent =
+                Vector3.ProjectOnPlane(
+                    startRotation * Vector3.forward,
+                    Vector3.up);
         }
 
-        outward.Normalize();
+        tangent.Normalize();
 
-        Vector3 tangent =
-            GetTravelTangent(outward);
-
-        // Mostly look in the direction of travel. A small component
-        // toward the table reduces the first turn. The tabletop center
-        // remains about 78 degrees off-axis and stays outside the view.
         Vector3 towardTable =
-            -outward;
+            Vector3.ProjectOnPlane(
+                focusPoint - position,
+                Vector3.up);
+
+        if (towardTable.sqrMagnitude > 0.0001f)
+        {
+            towardTable.Normalize();
+        }
 
         Vector3 horizontalForward =
             tangent +
             towardTable * InwardLookWeight;
 
+        if (horizontalForward.sqrMagnitude < 0.0001f)
+        {
+            horizontalForward = tangent;
+        }
+
         horizontalForward.Normalize();
 
         float originalVertical =
-            (startRotation *
-             Vector3.forward).y;
+            (startRotation * Vector3.forward).y;
 
         float vertical =
             Mathf.Clamp(
@@ -492,36 +938,21 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
             Vector3.up);
     }
 
-    private Vector3 GetTravelTangent(
-        Vector3 radial)
-    {
-        Vector3 tangent =
-            Vector3.Cross(
-                Vector3.up,
-                radial.normalized) *
-            arcDirection;
-
-        if (tangent.sqrMagnitude < 0.0001f)
-        {
-            tangent = Vector3.right;
-        }
-
-        return tangent.normalized;
-    }
-
     private void AddWalkingBodyMotion(
-        float walkProgress,
+        float routeProgress,
         Vector3 travelTangent,
         ref Vector3 position)
     {
         float gaitEnvelope =
             Mathf.Sin(
-                walkProgress *
+                routeProgress *
                 Mathf.PI);
 
+        gaitEnvelope *= gaitEnvelope;
+
         float stepPhase =
-            walkProgress *
-            WalkAroundDuration *
+            routeProgress *
+            timing.HiddenChangeDuration *
             1.65f *
             Mathf.PI *
             2f;
@@ -532,17 +963,17 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
             0.016f *
             gaitEnvelope;
 
-        Vector3 radialSide =
+        Vector3 side =
             Vector3.Cross(
                 travelTangent,
                 Vector3.up);
 
-        if (radialSide.sqrMagnitude < 0.0001f)
+        if (side.sqrMagnitude < 0.0001f)
         {
-            radialSide = Vector3.right;
+            side = Vector3.right;
         }
 
-        radialSide.Normalize();
+        side.Normalize();
 
         float lateralSway =
             Mathf.Sin(
@@ -552,13 +983,13 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
 
         position +=
             Vector3.up * verticalBob +
-            radialSide * lateralSway;
+            side * lateralSway;
     }
 
     private Quaternion LookAtFocusFrom(
         Vector3 position)
     {
-        Vector3 finalTarget =
+        Vector3 target =
             focusPoint +
             new Vector3(
                 0f,
@@ -566,13 +997,11 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
                 -0.02f);
 
         Vector3 direction =
-            finalTarget -
-            position;
+            target - position;
 
         if (direction.sqrMagnitude < 0.0001f)
         {
-            direction =
-                Vector3.forward;
+            direction = Vector3.forward;
         }
 
         return Quaternion.LookRotation(
@@ -580,16 +1009,124 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
             Vector3.up);
     }
 
+    private void ConfigureTableTurn(
+        Quaternion start,
+        Quaternion end)
+    {
+        Vector3 startForward =
+            (start * Vector3.forward).normalized;
+
+        Vector3 endForward =
+            (end * Vector3.forward).normalized;
+
+        tableTurnStartHorizontal =
+            Vector3.ProjectOnPlane(
+                startForward,
+                Vector3.up);
+
+        Vector3 endHorizontal =
+            Vector3.ProjectOnPlane(
+                endForward,
+                Vector3.up);
+
+        if (tableTurnStartHorizontal.sqrMagnitude < 0.0001f)
+        {
+            tableTurnStartHorizontal = Vector3.forward;
+        }
+
+        if (endHorizontal.sqrMagnitude < 0.0001f)
+        {
+            endHorizontal = tableTurnStartHorizontal;
+        }
+
+        tableTurnStartHorizontal.Normalize();
+        endHorizontal.Normalize();
+
+        tableTurnSignedYawDegrees =
+            Vector3.SignedAngle(
+                tableTurnStartHorizontal,
+                endHorizontal,
+                Vector3.up);
+
+        // Continue turning in the same direction as the route. This avoids
+        // Quaternion.Slerp choosing the opposite side near an ambiguous yaw.
+        if (Mathf.Abs(tableTurnSignedYawDegrees) > 0.001f &&
+            Mathf.Sign(tableTurnSignedYawDegrees) !=
+            Mathf.Sign(route.DirectionSign))
+        {
+            tableTurnSignedYawDegrees +=
+                360f *
+                Mathf.Sign(route.DirectionSign);
+        }
+
+        tableTurnStartPitchDegrees =
+            Mathf.Asin(
+                Mathf.Clamp(
+                    startForward.y,
+                    -1f,
+                    1f)) *
+            Mathf.Rad2Deg;
+
+        tableTurnEndPitchDegrees =
+            Mathf.Asin(
+                Mathf.Clamp(
+                    endForward.y,
+                    -1f,
+                    1f)) *
+            Mathf.Rad2Deg;
+    }
+
+    private Quaternion EvaluateTableTurnRotation(
+        float progress)
+    {
+        float t = Mathf.Clamp01(progress);
+
+        Vector3 horizontalForward =
+            Quaternion.AngleAxis(
+                tableTurnSignedYawDegrees * t,
+                Vector3.up) *
+            tableTurnStartHorizontal;
+
+        float pitchDegrees =
+            Mathf.Lerp(
+                tableTurnStartPitchDegrees,
+                tableTurnEndPitchDegrees,
+                t);
+
+        float pitchRadians =
+            pitchDegrees *
+            Mathf.Deg2Rad;
+
+        Vector3 forward =
+            horizontalForward.normalized *
+            Mathf.Cos(pitchRadians) +
+            Vector3.up *
+            Mathf.Sin(pitchRadians);
+
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            return routeArrivalRotation;
+        }
+
+        return Quaternion.LookRotation(
+            forward.normalized,
+            Vector3.up);
+    }
+
     private void ApplyNaturalEyeMotion(
         float t,
-        bool walking,
+        float walkingWeight,
         ref Vector3 position,
         ref Quaternion rotation)
     {
+        walkingWeight =
+            Mathf.Clamp01(walkingWeight);
+
         float positionAmount =
-            walking
-                ? 0.08f
-                : 0.18f;
+            Mathf.Lerp(
+                0.18f,
+                0.08f,
+                walkingWeight);
 
         float nx =
             (Mathf.PerlinNoise(
@@ -612,23 +1149,22 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
                 ny,
                 0f);
 
-        if (walking)
-        {
-            // No independent head yaw/roll during walking.
-            return;
-        }
+        float headMotionAmount =
+            1f - walkingWeight;
 
         float yaw =
             (Mathf.PerlinNoise(
                 cameraNoiseSeed + 23f,
                 t * 0.10f) - 0.5f) *
-            0.10f;
+            0.10f *
+            headMotionAmount;
 
         float roll =
             (Mathf.PerlinNoise(
                 cameraNoiseSeed + 37f,
                 t * 0.11f) - 0.5f) *
-            0.10f;
+            0.10f *
+            headMotionAmount;
 
         rotation *=
             Quaternion.Euler(
@@ -637,20 +1173,31 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
                 roll);
     }
 
+    private static float SafeProgress(
+        float elapsedTime,
+        float duration)
+    {
+        if (duration <= 0.0001f)
+        {
+            return 1f;
+        }
+
+        return Mathf.Clamp01(
+            elapsedTime / duration);
+    }
+
     private static Vector3 EstimateFocusPoint(
         Vector3 cameraPosition,
         Quaternion cameraRotation)
     {
         Vector3 horizontalForward =
             Vector3.ProjectOnPlane(
-                cameraRotation *
-                Vector3.forward,
+                cameraRotation * Vector3.forward,
                 Vector3.up);
 
         if (horizontalForward.sqrMagnitude < 0.0001f)
         {
-            horizontalForward =
-                Vector3.forward;
+            horizontalForward = Vector3.forward;
         }
 
         horizontalForward.Normalize();
@@ -700,11 +1247,8 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
             beforeLocalPositions,
             beforeLocalRotations);
 
-        cameraTransform.position =
-            startPosition;
-
-        cameraTransform.rotation =
-            startRotation;
+        cameraTransform.position = startPosition;
+        cameraTransform.rotation = startRotation;
     }
 
     private void CacheBeforeTransforms()
@@ -799,11 +1343,9 @@ public sealed class ChangeBlindnessSequence : MonoBehaviour
         }
     }
 
-    private static float SmootherStep(
-        float value)
+    private static float SmootherStep(float value)
     {
-        value =
-            Mathf.Clamp01(value);
+        value = Mathf.Clamp01(value);
 
         return
             value *

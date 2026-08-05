@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -10,7 +9,9 @@ public static class DatasetAnnotationWriter
     public static void WriteAll(
         string jobDirectory,
         string videoPath,
-        BatchJob job)
+        BatchJob job,
+        ChangeBlindnessTiming timing,
+        ChangeBlindnessCameraRoute cameraRoute)
     {
         if (string.IsNullOrWhiteSpace(jobDirectory) || job == null)
         {
@@ -19,11 +20,7 @@ public static class DatasetAnnotationWriter
 
         Directory.CreateDirectory(jobDirectory);
 
-        List<DatasetQaPair> qa = DatasetQAGenerator.Generate(job);
         string normalizedVideoPath = NormalizePath(videoPath);
-        string videoId =
-            "scene_" +
-            job.id.ToString("D6", CultureInfo.InvariantCulture);
         DatasetVideoMetadata metadata =
             BuildMetadata(job);
 
@@ -42,79 +39,17 @@ public static class DatasetAnnotationWriter
             leftAfter = job.leftAfter,
             rightAfter = job.rightAfter,
             metadata = metadata,
-            qa = qa
+            timeline = timing == null
+                ? null
+                : timing.ToData(),
+            cameraRoute = cameraRoute == null
+                ? null
+                : cameraRoute.ToData()
         };
 
         File.WriteAllText(
             Path.Combine(jobDirectory, "annotation.json"),
             JsonUtility.ToJson(annotation, true),
-            new UTF8Encoding(false));
-
-        DatasetVideoQaRecord record = new DatasetVideoQaRecord
-        {
-            video = normalizedVideoPath,
-            scene_type = DatasetQATemplateLibrary.SceneType,
-            metadata = metadata,
-            questions = qa
-        };
-
-        File.WriteAllText(
-            Path.Combine(jobDirectory, "qa_entries.json"),
-            JsonUtility.ToJson(record, true) + "\n",
-            new UTF8Encoding(false));
-
-        WriteText(jobDirectory, videoId, job, qa);
-    }
-
-    private static void WriteText(
-        string jobDirectory,
-        string videoId,
-        BatchJob job,
-        List<DatasetQaPair> qa)
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.AppendLine("Video ID: " + videoId);
-        builder.AppendLine("Scene type: " + DatasetQATemplateLibrary.SceneType);
-        builder.AppendLine("Change type: " + job.changeType);
-        builder.AppendLine("Changed slot: " + job.changedSlot);
-        builder.AppendLine(
-            "Object count: " +
-            job.InitialObjectCount +
-            " -> " +
-            job.FinalObjectCount);
-        builder.AppendLine(
-            "Before: left=" +
-            job.leftBefore.Description +
-            ", right=" +
-            job.rightBefore.Description);
-        builder.AppendLine(
-            "After:  left=" +
-            job.leftAfter.Description +
-            ", right=" +
-            job.rightAfter.Description);
-        builder.AppendLine();
-
-        for (int i = 0; i < qa.Count; i++)
-        {
-            builder.AppendLine(
-                "Q" +
-                (i + 1) +
-                " [" +
-                qa[i].question_type +
-                "]" +
-                ": " +
-                qa[i].question);
-            builder.AppendLine(
-                "A" +
-                (i + 1) +
-                ": " +
-                qa[i].answer);
-            builder.AppendLine();
-        }
-
-        File.WriteAllText(
-            Path.Combine(jobDirectory, "qa.txt"),
-            builder.ToString(),
             new UTF8Encoding(false));
     }
 

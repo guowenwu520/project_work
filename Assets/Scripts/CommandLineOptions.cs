@@ -15,6 +15,10 @@ public sealed class CommandLineOptions
     public int Height { get; private set; } = 1080;
     public int Fps { get; private set; } = 30;
     public string OutputRoot { get; private set; } = "Output";
+    public string TimingProfile { get; private set; } = "random";
+    public int CameraAngleDegrees { get; private set; }
+    public int CameraRouteVariant { get; private set; }
+    public string CameraRouteProfile { get; private set; } = "random";
 
     public static CommandLineOptions Parse(string[] args)
     {
@@ -60,6 +64,38 @@ public sealed class CommandLineOptions
                 case "--output":
                     options.OutputRoot = Next(args, ref i) ?? "Output";
                     break;
+                case "--timing-profile":
+                    options.TimingProfile =
+                        ParseChoice(
+                            Next(args, ref i),
+                            "random",
+                            "fastest",
+                            "slowest");
+                    break;
+                case "--camera-angle":
+                case "--camera-final-angle":
+                case "--camera-end-angle":
+                case "--final-view-angle":
+                    options.CameraAngleDegrees =
+                        ParseCameraAngle(
+                            Next(args, ref i));
+                    break;
+                case "--camera-route-variant":
+                case "--route-variant":
+                case "--camera-route":
+                    options.CameraRouteVariant =
+                        ParseRouteVariant(
+                            Next(args, ref i));
+                    break;
+                case "--camera-route-profile":
+                case "--route-profile":
+                    options.CameraRouteProfile =
+                        ParseChoice(
+                            Next(args, ref i),
+                            "random",
+                            "shortest",
+                            "longest");
+                    break;
             }
         }
 
@@ -86,5 +122,46 @@ public sealed class CommandLineOptions
         }
 
         return fallback;
+    }
+
+    private static int ParseCameraAngle(string value)
+    {
+        int parsed = ParseInt(value, 0);
+
+        return
+            parsed == 45 ||
+            parsed == 90 ||
+            parsed == 135 ||
+            parsed == 180
+                ? parsed
+                : 0;
+    }
+
+    private static int ParseRouteVariant(string value)
+    {
+        int parsed = ParseInt(value, 0);
+        return parsed == 1 || parsed == 2 ? parsed : 0;
+    }
+
+    private static string ParseChoice(
+        string value,
+        params string[] choices)
+    {
+        string normalized =
+            (value ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant();
+
+        for (int i = 0; i < choices.Length; i++)
+        {
+            if (normalized == choices[i])
+            {
+                return normalized;
+            }
+        }
+
+        return choices.Length > 0
+            ? choices[0]
+            : string.Empty;
     }
 }

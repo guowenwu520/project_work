@@ -381,9 +381,26 @@ public sealed class ExperimentBootstrap : MonoBehaviour
             camera.gameObject
                 .AddComponent<FrameSequenceCapture>();
 
+        ChangeBlindnessTiming timing =
+            ChangeBlindnessTiming.Create(
+                job.seed,
+                options.TimingProfile);
+
+        ChangeBlindnessCameraRoute cameraRoute =
+            ChangeBlindnessCameraRoute.Create(
+                camera.transform.position,
+                camera.transform.rotation,
+                room.TableCenter,
+                job.seed,
+                options.CameraAngleDegrees,
+                options.CameraRouteVariant,
+                options.CameraRouteProfile);
+
         capture.Configure(
             options,
-            job);
+            job,
+            timing,
+            cameraRoute);
 
 
         ChangeBlindnessSequence sequence =
@@ -397,6 +414,8 @@ public sealed class ExperimentBootstrap : MonoBehaviour
             job.HasVisualChange,
             options.Loop,
             capture,
+            timing,
+            cameraRoute,
             repositionTargets,
             afterLocalPositions,
             afterLocalRotations,

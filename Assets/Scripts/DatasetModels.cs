@@ -217,6 +217,8 @@ public sealed class DatasetAnnotation
     public DatasetObjectState leftAfter;
     public DatasetObjectState rightAfter;
     public DatasetVideoMetadata metadata;
+    public ChangeBlindnessTimingData timeline;
+    public ChangeBlindnessCameraRouteData cameraRoute;
     public List<DatasetQaPair> qa = new List<DatasetQaPair>();
     public List<DatasetConversationTurn> conversations = new List<DatasetConversationTurn>();
 }

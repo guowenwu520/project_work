@@ -1,57 +1,61 @@
-Base repository: https://github.com/guowenwu520/project_work.git
-Base branch: master
-Base commit: d44a290f4c78a787cd772b9d4f4c07de30a897d1
+ChangeBlindnessRoom smooth camera route v6
+===========================================
 
-Apply:
-1. Extract this archive over a checkout of the base repository.
-2. Rebuild the Linux Player because the dataset schema is now:
-   eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15
-3. Run the exact minimum coverage test:
-   QA_ONLY=1 ./Tools/test_all_cases.sh
-4. Run the full exact-minimum render by omitting QA_ONLY:
-   ./Tools/test_all_cases.sh
+Purpose
+-------
+Fix the visible camera rotation jump at the boundary between route movement
+and the phase that turns back toward the tabletop.
 
-Tools/test_all_cases.sh is the only retained test script.
+What changed
+------------
+1. Camera position and orientation now come from one planned smooth route.
+2. The actual route derivative defines the walking rotation at every point.
+3. The final route rotation is reused exactly as the first rotation of the
+   return-to-table phase.
+4. SmootherStep is used on both sides of every phase boundary, so position,
+   rotation and their velocities reach the same boundary state.
+5. Natural eye motion uses a continuous walking weight instead of switching
+   abruptly between walking/non-walking modes.
+6. Sequence completion no longer overwrites the already evaluated final pose.
+7. No extra transition stage or extra seconds were added.
+8. Both route variants stay inside the original camera orbit; the destination
+   and all detours move slightly toward the table to avoid walls/windows.
+9. The last 18% of the walking route begins the same signed turn that continues
+   in returnToTable. About 15% of the tabletop turn is completed before the
+   phase boundary, removing the visible direction change without extra time.
+10. The initial stationary turn is limited to 30 degrees. The first 32% of
+    walking then blends continuously from that gentle turn into the actual
+    route tangent, removing the initial movement-boundary view jump.
+11. Route 2 now uses one wide, shallow inward sweep for every final angle.
+    The previous 1-4 repeated bends were removed, and its extra inset is
+    limited to 0.05-0.10m to prevent repeated left/right camera swings.
 
-Authoritative workbook:
-QAs_v5_d.xlsx
-SHA-256:
-68e594d38b469c1d2d2db31de020480cf94aff58886b4bb79460ce31c80bb85b
+Preserved behavior
+------------------
+- Random timing: observation 2-10 seconds; movement 2-7 seconds.
+- Total duration range: 10-41 seconds (five existing stages only).
+- Final view angles: 45, 90, 135 and 180 degrees.
+- Two route variants for every final view angle.
+- Extreme profiles:
+  longest route + fastest timing;
+  shortest route + slowest timing.
+- Scene-only annotation/video generation. No QA files are generated here.
 
-Coverage:
-- QA wording comes only from sheets 01-08; ALL and other tabs are excluded
-- 374 authoritative templates total
-- 8 QA pairs per scene
-- Per-type counts: 58, 59, 30, 30, 60, 59, 39, 39
-- Exact minimum total: 50 scenes
+Apply
+-----
+Extract this archive at the project root and allow it to replace the matching
+files under Assets/Scripts.
 
-JSON format:
-- final records contain only one video-path field, video;
-  video_id and video_path were removed
-- metadata.change_type and metadata.change_exists were removed
-- metadata.no_change is true only for the no-change scene type
-- metadata: complete view-A/view-B position, color, count, and change flags
-- metadata color arrays use "Null" for a present object without color
-- questions[].question_type: descriptive or yes_or_no
-- Variables includes every currently supported QA placeholder
-- QA position variables use the fixed typical English values
-- Physical slot A is first-view left / second-view right
-- Physical slot B is first-view right / second-view left
-- view_a_object_a/b and view_b_object_a/b always name physical slot A/B;
-  they do not follow object identity through a position swap
-- after a swap, first-view object A ends at view_b_position_b and
-  first-view object B ends at view_b_position_a
-- Replacement, color, and distance changes affect A only
-- Addition and deletion affect B only
-- regenerate_existing_qa.py rejects old videos whose changed slot or
-  before/after state conflicts with the fixed sheet wording
-- QAs_v5_d.xlsx is now the only QA editing source
-- build_linux.sh automatically regenerates tabletop_qa_templates.json
-- run_dataset.sh, test_all_cases.sh, and regenerate_existing_qa.py also
-  synchronize the workbook before using QA
-- editing existing questions/answers/types takes effect without code changes
-- adding a new placeholder variable is rejected until scene code supports it
+Rebuild
+-------
+UNITY_BIN=/data4/UnitySceneGeneration/Unity/Hub/Editor/2022.3.58f1c1/Editor/Unity \
+./Tools/build_linux.sh
 
-The authoritative workbook questions and answers were not rewritten.
+Run existing route tests
+------------------------
+TEST_FEATURE=camera_route ./Tools/test_all_cases.sh
 
-The unrelated working-tree file Assets/RawModels/Dragon.glb is not included.
+The command-line parser accepts these equivalent route option spellings:
+--camera-angle / --camera-final-angle / --camera-end-angle / --final-view-angle
+--camera-route-variant / --route-variant / --camera-route
+--camera-route-profile / --route-profile

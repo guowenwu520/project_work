@@ -15,9 +15,10 @@ fi
 START_INDEX="${START_INDEX:-0}"
 COUNT="${COUNT:-24}"
 FPS="${FPS:-30}"
-# Timeline: 8 + 3 + 9 + 3 + 8 = 31 seconds.
-# Fixed-rate sampling produces duration * FPS frames, without +1.
-CAPTURE_DURATION_SECONDS="${CAPTURE_DURATION_SECONDS:-31}"
+# Random timeline limits: 2+2+2+2+2=10 seconds minimum,
+# 10+7+7+7+10=41 seconds maximum.
+MIN_CAPTURE_DURATION_SECONDS=10
+MAX_CAPTURE_DURATION_SECONDS=41
 WIDTH="${WIDTH:-384}"
 HEIGHT="${HEIGHT:-384}"
 RANDOM_RESOLUTION="${RANDOM_RESOLUTION:-1}"
@@ -30,6 +31,9 @@ PROGRESS_INTERVAL="${PROGRESS_INTERVAL:-10}"
 RANDOM_START="${RANDOM_START:-0}"
 FORCE_CHANGE_TYPE="${FORCE_CHANGE_TYPE:-}"
 FORCE_CHANGED_SLOT="${FORCE_CHANGED_SLOT:-}"
+FORCE_TIMING_PROFILE="${FORCE_TIMING_PROFILE:-random}"
+FORCE_CAMERA_END_ANGLE="${FORCE_CAMERA_END_ANGLE:-random}"
+FORCE_CAMERA_ROUTE_VARIANT="${FORCE_CAMERA_ROUTE_VARIANT:-random}"
 CLEAN_OUTPUT="${CLEAN_OUTPUT:-0}"
 DELETE_FRAMES="${DELETE_FRAMES:-1}"
 CRF="${CRF:-16}"
@@ -44,10 +48,8 @@ SHOW_OVERALL_PROGRESS="${SHOW_OVERALL_PROGRESS:-1}"
 
 EXPECTED_SCHEMA="${EXPECTED_SCHEMA:-eight-change-tabletop-xlsx-autosync-physical-ab-compact-json-v15}"
 BUILD_SCHEMA_FILE="$PROJECT_DIR/Build/Linux/dataset_schema_version.txt"
-QA_WORKBOOK="$PROJECT_DIR/QAs_v5_d.xlsx"
-QA_LIBRARY="$PROJECT_DIR/Assets/StreamingAssets/tabletop_qa_templates.json"
-QA_REGENERATOR="$PROJECT_DIR/Tools/regenerate_existing_qa.py"
-PLAYER_QA_LIBRARY="$PROJECT_DIR/Build/Linux/ChangeBlindnessRoom_Data/StreamingAssets/tabletop_qa_templates.json"
+BUILD_INFO_FILE="$PROJECT_DIR/Build/Linux/build_info.txt"
+PLAYER_QA_TEMPLATE="$PROJECT_DIR/Build/Linux/ChangeBlindnessRoom_Data/StreamingAssets/tabletop_qa_templates.json"
 
 resolution_names=("CLIP" "DFN" "SigLIP")
 resolution_sizes=(336 378 384)
@@ -134,10 +136,6 @@ validate_environment() {
     echo "FPS must be a positive integer: $FPS"
     exit 2
   fi
-  if ! is_positive_integer "$CAPTURE_DURATION_SECONDS"; then
-    echo "CAPTURE_DURATION_SECONDS must be a positive integer: $CAPTURE_DURATION_SECONDS"
-    exit 2
-  fi
   if ! is_positive_integer "$FFMPEG_THREADS"; then
     echo "FFMPEG_THREADS must be a positive integer: $FFMPEG_THREADS"
     exit 2
@@ -147,24 +145,54 @@ validate_environment() {
     exit 2
   fi
 
+  case "$FORCE_TIMING_PROFILE" in
+    legacy|random|fastest|slowest)
+      ;;
+    *)
+      echo "FORCE_TIMING_PROFILE must be legacy, random, fastest, or slowest: $FORCE_TIMING_PROFILE"
+      exit 2
+      ;;
+  esac
+
+  case "$FORCE_CAMERA_END_ANGLE" in
+    random|45|90|135|180)
+      ;;
+    *)
+      echo "FORCE_CAMERA_END_ANGLE must be random, 45, 90, 135, or 180: $FORCE_CAMERA_END_ANGLE"
+      exit 2
+      ;;
+  esac
+
+  case "$FORCE_CAMERA_ROUTE_VARIANT" in
+    random|1|2)
+      ;;
+    *)
+      echo "FORCE_CAMERA_ROUTE_VARIANT must be random, 1, or 2: $FORCE_CAMERA_ROUTE_VARIANT"
+      exit 2
+      ;;
+  esac
+
   require_file "$BUILD_SCHEMA_FILE" \
     "The Linux Player has no dataset schema marker: $BUILD_SCHEMA_FILE"
-  require_file "$QA_LIBRARY" \
-    "Missing QA library: $QA_LIBRARY"
-  require_file "$QA_REGENERATOR" \
-    "Missing balanced QA regenerator: $QA_REGENERATOR"
-  require_file "$QA_WORKBOOK" \
-    "Missing authoritative QA workbook: $QA_WORKBOOK"
-
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "python3 is required to synchronize QAs_v5_d.xlsx."
+  require_file "$BUILD_INFO_FILE" \
+    "The Linux Player has no build information: $BUILD_INFO_FILE"
+  if ! grep -Fxq 'QA mode: scene-state-only' "$BUILD_INFO_FILE"; then
+    echo "The Linux Player was not built in scene-state-only mode."
+    echo "Rebuild it with ./Tools/build_linux.sh before running the dataset."
     exit 1
   fi
 
-  python3 "$QA_REGENERATOR" \
-    --workbook "$QA_WORKBOOK" \
-    --templates "$QA_LIBRARY" \
-    --sync-templates-only
+  if [[ -e "$PLAYER_QA_TEMPLATE" ]]; then
+    echo "The built Player still contains the legacy QA template:"
+    echo "  $PLAYER_QA_TEMPLATE"
+    echo "Rebuild it with ./Tools/build_linux.sh."
+    exit 1
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 is required to validate dynamic render manifests."
+    exit 1
+  fi
 
   local build_schema
   build_schema="$(tr -d '\r\n' < "$BUILD_SCHEMA_FILE")"
@@ -184,9 +212,6 @@ validate_environment() {
 
   require_file "$MODEL_BUNDLE_DIR/prop_manifest.json" \
     "Model bundle manifest not found: $MODEL_BUNDLE_DIR/prop_manifest.json"
-
-  mkdir -p "$(dirname "$PLAYER_QA_LIBRARY")"
-  cp -f "$QA_LIBRARY" "$PLAYER_QA_LIBRARY"
 
   if ! command -v ffmpeg >/dev/null 2>&1; then
     echo "ffmpeg is required. Install it with: sudo apt install ffmpeg"
@@ -231,17 +256,51 @@ count_frames_in_batch_dir() {
   find "$batch_dir/frames" -maxdepth 1 -type f -name 'frame_*.png' -printf '.' 2>/dev/null | wc -c
 }
 
+expected_frames_from_manifest() {
+  local batch_dir="$1"
+  local manifest="$batch_dir/manifest.json"
+
+  if [[ ! -f "$manifest" ]]; then
+    return 1
+  fi
+
+  python3 - "$manifest" <<'PY'
+import json
+import math
+import sys
+from pathlib import Path
+
+try:
+    payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    recorded = int(payload.get("frameCount") or 0)
+    completed = bool(payload.get("completed"))
+    if completed and recorded > 0:
+        print(recorded)
+        raise SystemExit(0)
+
+    duration = float(payload["durationSeconds"])
+    fps = int(payload["fps"])
+    if duration <= 0 or fps <= 0:
+        raise ValueError("duration and fps must be positive")
+    print(max(1, math.ceil(duration * fps)))
+except Exception:
+    raise SystemExit(1)
+PY
+}
+
 find_complete_batch_dir() {
   local index="$1"
-  local expected_frames="$2"
-  local prefix batch_dir frame_count last_expected_frame
+  local prefix batch_dir frame_count expected_frames last_expected_frame
 
   prefix="$(batch_prefix "$index")"
-  printf -v last_expected_frame 'frame_%06d.png' "$((expected_frames - 1))"
 
   while IFS= read -r batch_dir; do
     [[ -n "$batch_dir" ]] || continue
+    expected_frames="$(expected_frames_from_manifest "$batch_dir" || true)"
+    [[ "$expected_frames" =~ ^[1-9][0-9]*$ ]] || continue
+
     frame_count="$(count_frames_in_batch_dir "$batch_dir")"
+    printf -v last_expected_frame 'frame_%06d.png' "$((expected_frames - 1))"
 
     # ffmpeg reads from frame_000000.png in sequence. Checking both ends avoids
     # treating an equally sized but incomplete sequence as a finished render.
@@ -341,179 +400,6 @@ encode_and_cleanup() {
 }
 
 
-merge_annotations() {
-  local root="$1"
-
-  python3 - "$root" <<'PY'
-from __future__ import annotations
-
-import json
-import os
-import sys
-from collections import OrderedDict
-from pathlib import Path
-
-EXPECTED_QUESTIONS = 8
-root = Path(sys.argv[1]).resolve()
-records = OrderedDict()
-invalid = 0
-missing_video = 0
-
-for path in sorted(root.glob("Batch_*/qa_entries.json")):
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        invalid += 1
-        print(f"Skipping invalid JSON {path}: {exc}", file=sys.stderr)
-        continue
-
-    if not isinstance(payload, dict):
-        invalid += 1
-        print(f"Skipping non-grouped annotation: {path}", file=sys.stderr)
-        continue
-
-    video = payload.get("video")
-    scene_type = payload.get("scene_type")
-    metadata = payload.get("metadata")
-    questions = payload.get("questions")
-
-    if (
-        not isinstance(video, str)
-        or not video.strip()
-        or scene_type != "tabletop"
-        or not isinstance(metadata, dict)
-        or not isinstance(questions, list)
-        or len(questions) != EXPECTED_QUESTIONS
-    ):
-        invalid += 1
-        print(f"Skipping invalid QA record: {path}", file=sys.stderr)
-        continue
-
-    normalized_questions = []
-    for item in questions:
-        if not isinstance(item, dict):
-            normalized_questions = []
-            break
-        question = item.get("question")
-        answer = item.get("answer")
-        question_type = item.get("question_type")
-        if (
-            not isinstance(question, str)
-            or not question.strip()
-            or not isinstance(answer, str)
-            or not answer.strip()
-            or question_type not in {
-                "descriptive",
-                "yes_or_no",
-            }
-        ):
-            normalized_questions = []
-            break
-        normalized_questions.append(
-            {
-                "question": question.strip(),
-                "answer": answer.strip(),
-                "question_type": question_type,
-            }
-        )
-
-    if (
-        len(normalized_questions) != EXPECTED_QUESTIONS
-        or len({item["question"] for item in normalized_questions})
-        != EXPECTED_QUESTIONS
-    ):
-        invalid += 1
-        print(f"Skipping invalid or duplicate QA set: {path}", file=sys.stderr)
-        continue
-
-    normalized_video = video.replace("\\", "/").lstrip("/")
-
-    # Accept an old qa_entries.json during resume, but always emit the compact
-    # v15 metadata shape in the final videodata.json.
-    legacy_change_type = metadata.get("change_type")
-    metadata = dict(metadata)
-    metadata.pop("change_type", None)
-    metadata.pop("change_exists", None)
-    if "no_change" not in metadata:
-        metadata["no_change"] = legacy_change_type == "no_change"
-
-    required_metadata = {
-        "view_a_object_count": int,
-        "view_b_object_count": int,
-        "view_a_position_a": list,
-        "view_a_position_b": list,
-        "view_b_position_a": list,
-        "view_b_position_b": list,
-        "view_a_color_a": list,
-        "view_a_color_b": list,
-        "view_b_color_a": list,
-        "view_b_color_b": list,
-        "changed_positions": list,
-        "object_replaced": bool,
-        "object_added": bool,
-        "object_removed": bool,
-        "color_changed": bool,
-        "position_changed": bool,
-        "distance_changed": bool,
-        "distance_change": str,
-        "no_change": bool,
-    }
-    metadata_valid = all(
-        key in metadata
-        and isinstance(metadata[key], expected_type)
-        for key, expected_type in required_metadata.items()
-    )
-    list_fields = [
-        key
-        for key, expected_type in required_metadata.items()
-        if expected_type is list
-    ]
-    metadata_valid = metadata_valid and all(
-        all(
-            isinstance(value, str)
-            and value.strip()
-            for value in metadata[key]
-        )
-        for key in list_fields
-    )
-    if not metadata_valid:
-        invalid += 1
-        print(f"Skipping invalid metadata: {path}", file=sys.stderr)
-        continue
-
-    video_file = root / normalized_video
-    if not video_file.is_file() or video_file.stat().st_size == 0:
-        missing_video += 1
-        continue
-
-    records[normalized_video] = {
-        "video": normalized_video,
-        "scene_type": "tabletop",
-        "metadata": metadata,
-        "questions": normalized_questions,
-    }
-
-output = root / "videodata.json"
-output.parent.mkdir(parents=True, exist_ok=True)
-temporary = output.with_name(f".{output.name}.tmp.{os.getpid()}")
-entries = list(records.values())
-temporary.write_text(
-    json.dumps(entries, ensure_ascii=False, indent=2) + "\n",
-    encoding="utf-8",
-)
-os.replace(temporary, output)
-
-print(
-    f"Merged {len(entries)} videos with "
-    f"{len(entries) * EXPECTED_QUESTIONS} QA pairs -> {output}"
-)
-if invalid:
-    print(f"Skipped invalid QA records: {invalid}", file=sys.stderr)
-if missing_video:
-    print(f"Skipped records without completed MP4: {missing_video}")
-PY
-}
-
 run_one_item() (
   set -Eeuo pipefail
 
@@ -529,7 +415,7 @@ run_one_item() (
   trap 'stop_job_child; exit 130' INT TERM
 
   log_file="$OUTPUT/logs/batch_$(printf '%06d' "$i").log"
-  expected_frames=$((CAPTURE_DURATION_SECONDS * FPS))
+  expected_frames=""
   output_video="$(video_path_for_index "$i")"
   item_config="$UNITY_CONFIG_DIR/jobs/item_$(printf '%06d' "$i")"
 
@@ -539,8 +425,9 @@ run_one_item() (
   fi
 
   if [[ "$RESUME" == "1" ]]; then
-    batch_dir="$(find_complete_batch_dir "$i" "$expected_frames" || true)"
+    batch_dir="$(find_complete_batch_dir "$i" || true)"
     if [[ -n "$batch_dir" ]]; then
+      expected_frames="$(expected_frames_from_manifest "$batch_dir")"
       final_frames="$(count_frames_in_batch_dir "$batch_dir")"
       echo "[item $i][$ordinal/$COUNT] Resume: found $final_frames/$expected_frames completed PNG frames."
       echo "[item $i] Skipping Unity and encoding the existing frame sequence directly."
@@ -558,9 +445,10 @@ run_one_item() (
 
     batch_dir="$(find_batch_dir "$i")"
     if [[ -n "$batch_dir" && -d "$batch_dir/frames" ]]; then
+      expected_frames="$(expected_frames_from_manifest "$batch_dir" || true)"
       final_frames="$(count_frames_in_batch_dir "$batch_dir")"
       if [[ "$final_frames" -gt 0 ]]; then
-        echo "[item $i] Resume: existing frames are incomplete ($final_frames/$expected_frames); Unity will continue normally."
+        echo "[item $i] Resume: existing frames are incomplete ($final_frames/${expected_frames:-unknown}); Unity will continue normally."
       fi
     fi
   fi
@@ -585,6 +473,9 @@ run_one_item() (
   if [[ -n "$current_changed_slot" ]]; then
     echo "[item $i] Forced changed slot: $current_changed_slot"
   fi
+  echo "[item $i] Timing profile: $FORCE_TIMING_PROFILE"
+  echo "[item $i] Camera end angle: $FORCE_CAMERA_END_ANGLE"
+  echo "[item $i] Camera route variant: $FORCE_CAMERA_ROUTE_VARIANT"
   echo "[item $i] Unity log: $log_file"
 
   local -a player_args=(
@@ -602,6 +493,9 @@ run_one_item() (
     --height "$item_height"
     --output "$OUTPUT"
     --model-bundle-dir "$MODEL_BUNDLE_DIR"
+    --timing-profile "$FORCE_TIMING_PROFILE"
+    --camera-end-angle "$FORCE_CAMERA_END_ANGLE"
+    --camera-route-variant "$FORCE_CAMERA_ROUTE_VARIANT"
   )
 
   if [[ -n "$SEED" ]]; then
@@ -628,7 +522,12 @@ run_one_item() (
     sleep "$PROGRESS_INTERVAL"
     if kill -0 "$job_child_pid" 2>/dev/null; then
       batch_frames="$(count_batch_frames "$i")"
-      echo "[item $i] Progress: ${batch_frames}/${expected_frames} PNG frames"
+      batch_dir="$(find_batch_dir "$i")"
+      expected_frames=""
+      if [[ -n "$batch_dir" ]]; then
+        expected_frames="$(expected_frames_from_manifest "$batch_dir" || true)"
+      fi
+      echo "[item $i] Progress: ${batch_frames}/${expected_frames:-unknown} PNG frames"
     fi
   done
 
@@ -652,7 +551,13 @@ run_one_item() (
   fi
 
   final_frames="$(find "$batch_dir/frames" -maxdepth 1 -type f -name 'frame_*.png' -printf '.' 2>/dev/null | wc -c)"
+  expected_frames="$(expected_frames_from_manifest "$batch_dir" || true)"
   echo "[item $i] Rendered: $final_frames PNG frames"
+
+  if [[ ! "$expected_frames" =~ ^[1-9][0-9]*$ ]]; then
+    echo "[item $i] Missing or invalid dynamic-timeline manifest: $batch_dir/manifest.json"
+    exit 3
+  fi
 
   if [[ "$final_frames" -lt "$expected_frames" ]]; then
     echo "[item $i] Incomplete render: expected $expected_frames frames, found $final_frames."
@@ -731,14 +636,18 @@ Dataset run started
   parallel jobs : $WORKERS
   resolution    : $([[ "$RANDOM_RESOLUTION" == "1" ]] && echo "random: CLIP 336x336 / DFN 378x378 / SigLIP 384x384" || echo "fixed: ${WIDTH}x${HEIGHT}")
   fps           : $FPS
-  capture time  : ${CAPTURE_DURATION_SECONDS}s
-  expected PNGs : $((CAPTURE_DURATION_SECONDS * FPS))
+  capture time  : random ${MIN_CAPTURE_DURATION_SECONDS}-${MAX_CAPTURE_DURATION_SECONDS}s
+  expected PNGs : read from each completed Batch manifest
   encode        : $PRESET / CRF $CRF / ffmpeg threads $FFMPEG_THREADS
   Unity jobs    : $UNITY_JOB_WORKERS per Player
   delete frames : $DELETE_FRAMES
   schema        : $SOURCE_SCHEMA
   changed slot  : ${FORCE_CHANGED_SLOT:-canonical by change type}
+  timing profile: $FORCE_TIMING_PROFILE
+  end angle     : $FORCE_CAMERA_END_ANGLE
+  route variant : $FORCE_CAMERA_ROUTE_VARIANT
   model bundles : $MODEL_BUNDLE_DIR
+  final JSON/QA : disabled
 INFO
 
 RUN_START_EPOCH="$(date +%s)"
@@ -779,18 +688,6 @@ while [[ "$active_workers" -gt 0 ]]; do
   fi
 done
 
-# Re-select QA across the complete output using an independent balanced
-# template cycle for every change type. MP4 and PNG files are untouched.
-python3 "$QA_REGENERATOR" \
-  "$OUTPUT" \
-  --templates "$QA_LIBRARY" \
-  --no-backup \
-  --require-all-videos
-
-# Final strict validation and deterministic merge.
-merge_annotations "$OUTPUT"
-
-
 trap - INT TERM
 
 RUN_END_EPOCH="$(date +%s)"
@@ -799,7 +696,8 @@ RUN_TOTAL_SECONDS=$((RUN_END_EPOCH - RUN_START_EPOCH))
 echo
 echo "Dataset run complete: $OUTPUT"
 echo "Videos: $OUTPUT/data"
-echo "QA JSON: $OUTPUT/videodata.json"
+echo "Batch annotations/manifests: $OUTPUT/Batch_*"
+echo "Final videodata.json/QA: not generated"
 echo "Start index used: $START_INDEX"
 echo "Parallel jobs used: $WORKERS"
 echo "Completed items: $successful_items/$COUNT"
