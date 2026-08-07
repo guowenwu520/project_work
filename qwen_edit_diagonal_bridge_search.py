@@ -84,7 +84,12 @@ except ImportError as import_error:
 TensorPair = Tuple[torch.Tensor, torch.Tensor]  # (text token, image token)
 BlockCache = Dict[int, TensorPair]  # layer -> (text residual, image residual)
 Window = Tuple[int, int]  # 0-based 闭区间
-CACHE_STRATEGY_VERSION = "previous_step_same_block_residual_cache_v2"
+CACHE_STRATEGY_VERSION = (
+    "dynamic_window_compute_penalty_previous_step_same_block_residual_cache_v3"
+)
+BLUE_LINE_CACHE_STRATEGY_VERSION = (
+    "blue_line_profiled_previous_step_same_block_residual_cache_v4"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -199,7 +204,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./qwen_edit_diagonal_bridge_residual_cache_v2_outputs",
+        default="./qwen_edit_diagonal_bridge_residual_cache_v3_outputs",
         help="结果保存目录。",
     )
     parser.add_argument(
@@ -521,6 +526,355 @@ def score_candidate(
     }
 
 
+def residual_change_metrics(
+    previous: torch.Tensor,
+    current: torch.Tensor,
+) -> Dict[str, float]:
+    """计算相邻timestep同层残差的变化，全部归约在当前设备上完成。"""
+    if previous.shape != current.shape:
+        raise RuntimeError(
+            "相邻timestep残差形状不一致："
+            f"previous={tuple(previous.shape)}，current={tuple(current.shape)}。"
+        )
+    previous_float = previous.float()
+    current_float = current.float()
+    difference = current_float - previous_float
+    previous_energy = previous_float.square().mean().clamp_min(1e-12)
+    current_energy = current_float.square().mean().clamp_min(1e-12)
+    difference_energy = difference.square().mean()
+    dot = (previous_float * current_float).mean()
+    cosine = dot / torch.sqrt(previous_energy * current_energy).clamp_min(1e-12)
+    return {
+        "relative_l2": float(torch.sqrt(difference_energy / previous_energy).item()),
+        "cosine_similarity": float(cosine.clamp(-1.0, 1.0).item()),
+        "difference_rms": float(torch.sqrt(difference_energy).item()),
+        "previous_residual_rms": float(torch.sqrt(previous_energy).item()),
+        "current_residual_rms": float(torch.sqrt(current_energy).item()),
+    }
+
+
+class ResidualProfileController:
+    """完整运行一次pipeline，记录每个step×block的双流残差变化。"""
+
+    def __init__(
+        self,
+        transformer_blocks: Sequence[torch.nn.Module],
+        original_transformer_forward: Callable[..., Any],
+        args: argparse.Namespace,
+        forwards_per_step: int,
+    ) -> None:
+        self.blocks = list(transformer_blocks)
+        self.original_transformer_forward = original_transformer_forward
+        self.original_block_forwards = [block.forward for block in self.blocks]
+        self.args = args
+        self.forwards_per_step = forwards_per_step
+        self.total_layers = len(self.blocks)
+        self.expected_calls = int(args.num_inference_steps) * forwards_per_step
+        self.call_index = 0
+        self.previous_caches: Dict[int, BlockCache] = {}
+        self.rows: List[Dict[str, Any]] = []
+
+    def __call__(self, *positional_args, **keyword_args):
+        if self.call_index >= self.expected_calls:
+            raise RuntimeError("残差统计Transformer forward次数超过预期。")
+        step_index = self.call_index // self.forwards_per_step
+        branch_index = self.call_index % self.forwards_per_step
+        print(
+            f"[profile][{getattr(self.args, 'device', 'cuda')}]"
+            f"[sample {int(getattr(self.args, 'sample_index', 0)):05d}] "
+            f"step={step_index + 1}/{self.args.num_inference_steps}，"
+            f"branch={branch_index + 1}/{self.forwards_per_step}："
+            "完整计算并统计逐层残差变化",
+            flush=True,
+        )
+        executed = set(range(self.total_layers))
+        with install_block_policy(
+            transformer_blocks=self.blocks,
+            original_block_forwards=self.original_block_forwards,
+            executed_layers=executed,
+            previous_step_cache=None,
+            capture_all_layers=True,
+        ) as captured:
+            output = self.original_transformer_forward(
+                *positional_args,
+                **keyword_args,
+            )
+        current_cache: BlockCache = captured["layer_cache"]
+        if len(current_cache) != self.total_layers:
+            raise RuntimeError("完整轨迹没有采集到全部Block残差。")
+
+        previous_cache = self.previous_caches.get(branch_index)
+        for layer_index in range(self.total_layers):
+            text_current, image_current = current_cache[layer_index]
+            row: Dict[str, Any] = {
+                "step_index_0based": step_index,
+                "step_number_1based": step_index + 1,
+                "branch_index_0based": branch_index,
+                "branch_number_1based": branch_index + 1,
+                "block_index_0based": layer_index,
+                "block_number_1based": layer_index + 1,
+            }
+            if previous_cache is None:
+                row.update(
+                    {
+                        "image_relative_l2": None,
+                        "image_cosine_similarity": None,
+                        "image_difference_rms": None,
+                        "image_previous_residual_rms": None,
+                        "image_current_residual_rms": float(
+                            torch.sqrt(image_current.float().square().mean()).item()
+                        ),
+                        "text_relative_l2": None,
+                        "text_cosine_similarity": None,
+                        "text_difference_rms": None,
+                        "text_previous_residual_rms": None,
+                        "text_current_residual_rms": float(
+                            torch.sqrt(text_current.float().square().mean()).item()
+                        ),
+                    }
+                )
+            else:
+                text_previous, image_previous = previous_cache[layer_index]
+                image_metrics = residual_change_metrics(image_previous, image_current)
+                text_metrics = residual_change_metrics(text_previous, text_current)
+                row.update(
+                    {
+                        f"image_{key}": value
+                        for key, value in image_metrics.items()
+                    }
+                )
+                row.update(
+                    {
+                        f"text_{key}": value
+                        for key, value in text_metrics.items()
+                    }
+                )
+            self.rows.append(row)
+
+        self.previous_caches[branch_index] = current_cache
+        self.call_index += 1
+        return output
+
+    def validate_complete(self) -> None:
+        if self.call_index != self.expected_calls:
+            raise RuntimeError(
+                f"残差统计实际调用{self.call_index}次，预期{self.expected_calls}次。"
+            )
+
+
+class FullReferenceController:
+    """完整运行并保留逐step教师输出，供随后缓存轨迹逐step对比。"""
+
+    def __init__(
+        self,
+        transformer_blocks: Sequence[torch.nn.Module],
+        original_transformer_forward: Callable[..., Any],
+        args: argparse.Namespace,
+        forwards_per_step: int,
+    ) -> None:
+        self.blocks = list(transformer_blocks)
+        self.original_transformer_forward = original_transformer_forward
+        self.original_block_forwards = [block.forward for block in self.blocks]
+        self.args = args
+        self.forwards_per_step = forwards_per_step
+        self.total_layers = len(self.blocks)
+        self.expected_calls = int(args.num_inference_steps) * forwards_per_step
+        self.call_index = 0
+        self.references: Dict[Tuple[int, int], Dict[str, Any]] = {}
+
+    def __call__(self, *positional_args, **keyword_args):
+        if self.call_index >= self.expected_calls:
+            raise RuntimeError("教师Transformer forward次数超过预期。")
+        step_index = self.call_index // self.forwards_per_step
+        branch_index = self.call_index % self.forwards_per_step
+        print(
+            f"[baseline][{getattr(self.args, 'device', 'cuda')}]"
+            f"[sample {int(getattr(self.args, 'sample_index', 0)):05d}] "
+            f"step={step_index + 1}/{self.args.num_inference_steps}，"
+            f"branch={branch_index + 1}/{self.forwards_per_step}：完整计算",
+            flush=True,
+        )
+        with install_block_policy(
+            transformer_blocks=self.blocks,
+            original_block_forwards=self.original_block_forwards,
+            executed_layers=set(range(self.total_layers)),
+            previous_step_cache=None,
+            capture_all_layers=False,
+        ) as captured:
+            output = self.original_transformer_forward(
+                *positional_args,
+                **keyword_args,
+            )
+        last_tokens = captured["last_tokens"]["tokens"]
+        if last_tokens is None:
+            raise RuntimeError("教师轨迹没有记录到最后一层token。")
+        teacher_sample = extract_transformer_sample(output).detach().clone()
+        teacher_text, teacher_image = last_tokens
+        self.references[(step_index, branch_index)] = {
+            "sample": teacher_sample,
+            "last_tokens": (
+                teacher_text.detach().clone(),
+                teacher_image.detach().clone(),
+            ),
+        }
+        self.call_index += 1
+        return output
+
+    def validate_complete(self) -> None:
+        if self.call_index != self.expected_calls:
+            raise RuntimeError(
+                f"教师轨迹实际调用{self.call_index}次，预期{self.expected_calls}次。"
+            )
+
+
+class BlueLineScheduledController:
+    """执行离线生成的蓝线schedule，并详细记录逐step误差和逐Block缓存来源。"""
+
+    def __init__(
+        self,
+        transformer_blocks: Sequence[torch.nn.Module],
+        original_transformer_forward: Callable[..., Any],
+        schedule: Dict[int, Dict[str, Any]],
+        teacher_references: Dict[Tuple[int, int], Dict[str, Any]],
+        args: argparse.Namespace,
+        forwards_per_step: int,
+    ) -> None:
+        self.blocks = list(transformer_blocks)
+        self.original_transformer_forward = original_transformer_forward
+        self.original_block_forwards = [block.forward for block in self.blocks]
+        self.schedule = schedule
+        self.teacher_references = teacher_references
+        self.args = args
+        self.forwards_per_step = forwards_per_step
+        self.total_layers = len(self.blocks)
+        self.expected_calls = int(args.num_inference_steps) * forwards_per_step
+        self.call_index = 0
+        self.previous_caches: Dict[int, BlockCache] = {}
+        self.last_refresh_steps: Dict[int, Dict[int, int]] = {}
+        self.branch_step_rows: List[Dict[str, Any]] = []
+        self.block_action_rows: List[Dict[str, Any]] = []
+
+    def __call__(self, *positional_args, **keyword_args):
+        if self.call_index >= self.expected_calls:
+            raise RuntimeError("蓝线策略Transformer forward次数超过预期。")
+        step_index = self.call_index // self.forwards_per_step
+        branch_index = self.call_index % self.forwards_per_step
+        item = self.schedule[step_index]
+        executed = {
+            int(layer) for layer in item["executed_blocks_0based"]
+        }
+        if step_index == 0:
+            executed = set(range(self.total_layers))
+            previous_cache = None
+        else:
+            previous_cache = self.previous_caches.get(branch_index)
+            if previous_cache is None:
+                raise RuntimeError(
+                    f"蓝线step={step_index + 1}缺少上一step缓存。"
+                )
+
+        with install_block_policy(
+            transformer_blocks=self.blocks,
+            original_block_forwards=self.original_block_forwards,
+            executed_layers=executed,
+            previous_step_cache=previous_cache,
+            capture_all_layers=True,
+        ) as captured:
+            output = self.original_transformer_forward(
+                *positional_args,
+                **keyword_args,
+            )
+        last_tokens = captured["last_tokens"]["tokens"]
+        current_cache: BlockCache = captured["layer_cache"]
+        if last_tokens is None or len(current_cache) != self.total_layers:
+            raise RuntimeError("蓝线策略没有采集到完整缓存或最后层token。")
+
+        teacher = self.teacher_references.get((step_index, branch_index))
+        if teacher is None:
+            raise RuntimeError(
+                f"缺少step={step_index + 1}、branch={branch_index + 1}教师输出。"
+            )
+        metrics = score_candidate(
+            teacher_output=teacher["sample"],
+            candidate_output=output,
+            teacher_last_tokens=teacher["last_tokens"],
+            candidate_last_tokens=last_tokens,
+            args=self.args,
+        )
+        skipped = sorted(set(range(self.total_layers)) - executed)
+        print(
+            f"[blue-line][{getattr(self.args, 'device', 'cuda')}]"
+            f"[sample {int(getattr(self.args, 'sample_index', 0)):05d}] "
+            f"step={step_index + 1}/{self.args.num_inference_steps}，"
+            f"branch={branch_index + 1}/{self.forwards_per_step}："
+            f"执行{len(executed)}层，跳过{len(skipped)}层；"
+            f"执行=[{one_based_layer_string(sorted(executed))}]；"
+            f"跳过=[{one_based_layer_string(skipped)}]",
+            flush=True,
+        )
+        self.branch_step_rows.append(
+            {
+                "step_index_0based": step_index,
+                "step_number_1based": step_index + 1,
+                "branch_index_0based": branch_index,
+                "branch_number_1based": branch_index + 1,
+                "executed_block_count": len(executed),
+                "skipped_block_count": len(skipped),
+                "executed_blocks_1based": one_based_layer_string(sorted(executed)),
+                "skipped_blocks_1based": one_based_layer_string(skipped),
+                **metrics,
+            }
+        )
+
+        refresh_steps = self.last_refresh_steps.setdefault(branch_index, {})
+        for layer_index in range(self.total_layers):
+            if layer_index in executed:
+                source_step = step_index
+                refresh_steps[layer_index] = step_index
+                action = "execute"
+                cache_age = 0
+            else:
+                source_step = refresh_steps.get(layer_index)
+                if source_step is None:
+                    raise RuntimeError(
+                        f"Block {layer_index + 1}被跳过但没有真实缓存来源。"
+                    )
+                action = "cache"
+                cache_age = step_index - source_step
+            self.block_action_rows.append(
+                {
+                    "step_index_0based": step_index,
+                    "step_number_1based": step_index + 1,
+                    "branch_index_0based": branch_index,
+                    "branch_number_1based": branch_index + 1,
+                    "block_index_0based": layer_index,
+                    "block_number_1based": layer_index + 1,
+                    "action": action,
+                    "cache_source_step_index_0based": source_step,
+                    "cache_source_step_number_1based": source_step + 1,
+                    "cache_age": cache_age,
+                    "base_blue_line_action": (
+                        "cache"
+                        if layer_index in set(item.get("base_skipped_blocks_0based", []))
+                        else "execute"
+                    ),
+                    "forced_refresh": bool(
+                        layer_index in set(item.get("forced_refresh_blocks_0based", []))
+                    ),
+                }
+            )
+
+        self.previous_caches[branch_index] = current_cache
+        self.call_index += 1
+        return output
+
+    def validate_complete(self) -> None:
+        if self.call_index != self.expected_calls:
+            raise RuntimeError(
+                f"蓝线策略实际调用{self.call_index}次，预期{self.expected_calls}次。"
+            )
+
+
 class SearchController:
     """
     在完整教师pipeline内部逐step穷举窗口，但返回教师输出维持完整基线轨迹。
@@ -750,6 +1104,7 @@ class SearchController:
             aggregates,
             key=lambda row: (
                 float(row["score"]),
+                -int(row["window_size"]),
                 int(row["window_start_0based"]),
             ),
         )
@@ -768,8 +1123,9 @@ class SearchController:
         print(
             f"{self._progress_prefix()} "
             f"step={step_index + 1}/{self.args.num_inference_steps}完成；"
-            f"最优窗口=Block "
+            f"最低raw score窗口=Block "
             f"{best['window_start_1based']}-{best['window_end_1based']}；"
+            f"窗口长度={best['window_size']}；"
             f"执行={best['executed_block_count']}层，"
             f"跳过={best['skipped_block_count']}层；"
             f"score={float(best['score']):.8e}",
